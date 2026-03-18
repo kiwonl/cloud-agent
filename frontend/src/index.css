@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  --color-primary: #0058bd;
+  --color-primary-container: #2771df;
+  --color-on-primary: #ffffff;
+  --color-secondary: #8a5100;
+  --color-secondary-container: #fe9800;
+  --color-tertiary: #135ea2;
+  --color-background: #f8fafb;
+  --color-surface: #f8fafb;
+  --color-surface-container-low: #f2f4f5;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-surface: #191c1d;
+  --color-on-surface-variant: #1e2129;
+  --color-outline-variant: #c2c6d5;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-body;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-surface-container-lowest;
+  }
+
+  .blue-gradient-btn {
+    background: linear-gradient(135deg, #0058bd 0%, #2771df 100%);
+  }
+
+  .blueprint-grid {
+    background-image: radial-gradient(circle, rgba(194, 198, 213, 0.4) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "Vertex Cloud Architect",
+  "description": "A high-precision cloud migration platform for AWS to GCP transitions, featuring architecture mapping and automated Terraform generation.",
+  "requestFramePermissions": []
+}

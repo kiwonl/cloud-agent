@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+node_env/
+.env
+
+# Python build & cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.pytest_cache/
+
+# React / Vite builds
+dist/
+dist-ssr/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / Editor settings
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project Specific
+data/
+orchestrator_debug_msg_exact.txt
+logs/
+.adk/
+.terraform/
+*.tfstate
+*.tfstate.backup
+.env.*
+!.env.template
