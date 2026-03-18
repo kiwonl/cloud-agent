@@ -48,8 +48,7 @@ const Sidebar = ({ activePage, onPageChange }: { activePage: Page, onPageChange:
   const navItems: NavItem[] = [
     { id: 'upload', label: 'Architecture Upload', icon: 'CloudUpload' },
     { id: 'analysis', label: 'Analysis Report', icon: 'FileText' },
-    { id: 'checklist', label: 'Migration Checklist', icon: 'ClipboardCheck' },
-    { id: 'mapping', label: 'Service Mapping', icon: 'MapIcon' },
+        { id: 'mapping', label: 'Service Mapping', icon: 'MapIcon' },
     { id: 'terraform', label: 'Terraform Output', icon: 'Code' },
   ];
 
@@ -216,7 +215,6 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
   const [availability, setAvailability] = useState('Multi-AZ HA');
   const [traffic, setTraffic] = useState('Medium (1k~10k)');
 
-  const [isContainer, setIsContainer] = useState(false);
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [isMsa, setIsMsa] = useState(false);
 
@@ -303,10 +301,6 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
                 <h4 className="text-xs font-bold text-primary tracking-widest uppercase">Architecture</h4>
                 <div className="space-y-2">
                   <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
-                    <input type="checkbox" checked={isContainer} onChange={(e) => setIsContainer(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
-                    Kubernetes
-                  </label>
-                  <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
                     <input type="checkbox" checked={isMonitoring} onChange={(e) => setIsMonitoring(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
                     Centralized Logging & Monitoring
                   </label>
@@ -373,7 +367,7 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
 
           <div className="flex items-center justify-end">
             <button
-              onClick={() => onAnalyze(desc, { rto, availability, traffic, isContainer, isMonitoring, isMsa }, selectedFile)}
+              onClick={() => onAnalyze(desc, { rto, availability, traffic, isMonitoring, isMsa }, selectedFile)}
               disabled={isLoading || (!desc.trim() && !selectedFile)}
               className={cn(
                 "bg-gradient-to-r from-primary to-primary-container text-on-primary px-12 py-5 rounded-md font-bold text-lg shadow-xl hover:shadow-primary/20 active:scale-95 transition-all flex items-center gap-3",
@@ -583,98 +577,24 @@ const MappingPage = ({ mappings, onConfirm, awaitingApproval, isLoading }: { map
 };
 
 
-const ChecklistPage = ({ items, onConfirm, onFeedback, awaitingApproval, isLoading }: { items: VerificationItem[], onConfirm?: () => void, onFeedback?: (text: string) => void, awaitingApproval?: boolean, isLoading?: boolean }) => {
-  return (
-    <div className="space-y-10">
-      <PageHeader
-        step="Step 02"
-        title="Migration Checklist"
-        description="Pre-flight validation checklist for target architecture deploy."
-      />
+const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onFeedback, isLoading, setLoadingMsg }: { report: string, checklistItems: VerificationItem[], awaitingApproval: boolean, onConfirm: () => void, onFeedback: (text: string) => void, isLoading: boolean, setLoadingMsg: (msg: string) => void }) => {
+  const [activeTab, setActiveTab] = useState<'report' | 'checklist'>('report');
 
-      {awaitingApproval && (
-        <ApprovalPanel
-          title="Verification Complete - Awaiting Approval"
-          description="Checklist verification complete. Proceed to Service Mapping?"
-          confirmText="Approve & Proceed"
-          onConfirm={() => onConfirm && onConfirm()}
-          onFeedback={onFeedback}
-          isLoading={isLoading || false}
-        />
-      )}
-
-      <div className="space-y-6">
-        {items.length === 0 ? (
-          <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No checklist items generated yet.</p>
-        ) : (
-          items.map((item) => (
-            <div key={item.id} className={cn(
-              "group transition-all duration-300 p-6 flex items-start gap-6 rounded-xl relative overflow-hidden border shadow-[0_1px_2px_rgba(0,0,0,0.02)]",
-              item.status === 'complete' ? "bg-emerald-50/20 border-emerald-200/50 hover:bg-emerald-50/40" :
-                item.status === 'warning' ? "bg-amber-50/20 border-amber-200/50 hover:bg-amber-50/40" :
-                  "bg-slate-50/40 border-slate-200/60 hover:bg-slate-50/60"
-            )}>
-              <div className={cn(
-                "w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-lg shadow-sm mt-1",
-                item.status === 'complete' ? "bg-white text-emerald-600 border border-emerald-100" :
-                  item.status === 'warning' ? "bg-white text-amber-600 border border-amber-100" :
-                    "bg-white text-slate-500 border border-slate-100"
-              )}>
-                {item.status === 'complete' ? <CheckCircle2 className="w-6 h-6" /> : item.status === 'warning' ? <AlertTriangle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-1">
-                  <span className="text-[10px] font-mono font-bold text-on-surface-variant opacity-60">ID: {item.id}</span>
-                </div>
-                <h5 className="font-headline font-bold text-on-surface text-base">{item.title}</h5>
-                <p className="text-sm text-on-surface-variant">{item.description}</p>
-
-                {/* 🛡️ 3안: 동적 마이크로카피 주입 안내문 */}
-                <div className="flex items-center gap-1 mt-3 text-[11px] font-bold tracking-tight">
-                  {item.status === 'complete' ? (
-                    <span className="text-emerald-700 flex items-center gap-1">✅ Verified & Approved — Ready for deployment.</span>
-                  ) : item.status === 'warning' ? (
-                    <span className="text-amber-700 flex items-center gap-1">⚠️ Attention — Security or architecture concern detected. Certification recommended.</span>
-                  ) : (
-                    <span className="text-slate-600 flex items-center gap-1">⏳ 정보 부족으로 인해 판단이 보류되었습니다. 상세 설계를 확인해 주세요.</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="text-right">
-                <span className={cn(
-                  "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm",
-                  item.status === 'complete' ? "bg-emerald-100/80 text-emerald-800" : item.status === 'warning' ? "bg-amber-100/80 text-amber-800" : "bg-slate-100/80 text-slate-700"
-                )}>
-                  {item.status === 'complete' ? 'Passed' : item.status === 'warning' ? 'Warning' : 'Pending'}
-                </span>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-};
-
-
-const AnalysisPage = ({ report, awaitingApproval, onConfirm, onFeedback, isLoading, setLoadingMsg }: { report: string, awaitingApproval: boolean, onConfirm: () => void, onFeedback: (text: string) => void, isLoading: boolean, setLoadingMsg: (msg: string) => void }) => {
   return (
     <div className="space-y-10">
       <PageHeader
         step="Step 01"
-        title="Analysis Report"
-        description="Detailed architecture audit and breakdown from AWS."
+        title="Analysis Report & Quality Audit"
+        description="Detailed architecture audit, breakdown, and validation checklist."
       />
 
       {awaitingApproval && (
         <ApprovalPanel
-          title="Analysis Complete - Awaiting Approval"
-          description="Architecture analysis complete. Proceed to Infrastructure Checklist validation?"
+          title="Analysis & Audit Complete - Awaiting Approval"
+          description="Architecture analysis and quality audit complete. Proceed to GCP Resource Mapping?"
           confirmText="Approve & Proceed"
           onConfirm={() => {
-            setLoadingMsg("✅ Approval complete. Validating detailed infrastructure checklist...");
+            setLoadingMsg("✅ Approval complete. Generating GCP service mappings...");
             onConfirm();
           }}
           onFeedback={(text) => {
@@ -685,49 +605,143 @@ const AnalysisPage = ({ report, awaitingApproval, onConfirm, onFeedback, isLoadi
         />
       )}
 
-      {!report ? (
+      {(!report && (!checklistItems || checklistItems.length === 0)) ? (
         <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No detailed analysis report generated yet.</p>
       ) : (
-        <div className="bg-surface-container-lowest p-8 rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/10 relative min-h-[400px]">
-          <div className="text-on-surface">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ node, ...props }) => <h1 className="text-4xl font-headline font-semibold text-primary mt-6 mb-4" {...props} />,
-                h2: ({ node, ...props }) => <h2 className="text-3xl font-headline font-semibold text-on-surface mt-8 mb-4 pb-2 border-b border-outline-variant/30" {...props} />,
-                h3: ({ node, ...props }) => <h3 className="text-xl font-headline font-bold text-on-surface mt-5 mb-2" {...props} />,
-                p: ({ node, ...props }) => <p className="text-on-surface-variant leading-relaxed mb-4 text-sm" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
-                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
-                li: ({ node, ...props }) => <li className="pl-1" {...props} />,
-                table: ({ node, ...props }) => <div className="overflow-x-auto my-6"><table className="w-full border-collapse border border-outline-variant/20 rounded-lg text-sm" {...props} /></div>,
-                thead: ({ node, ...props }) => <thead className="bg-surface-container-high text-on-surface font-bold text-left" {...props} />,
-                tbody: ({ node, ...props }) => <tbody className="divide-y divide-outline-variant/10 text-on-surface" {...props} />,
-                tr: ({ node, ...props }) => <tr className="hover:bg-surface-container-low/50 transition-colors" {...props} />,
-                th: ({ node, ...props }) => <th className="p-3 border border-outline-variant/10 font-bold" {...props} />,
-                td: ({ node, ...props }) => <td className="p-3 border border-outline-variant/10" {...props} />,
-                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-primary pl-4 py-2 my-4 bg-primary/5 rounded-r text-on-surface-variant text-sm italic" {...props} />,
-                pre: ({ node, ...props }) => (
-                  <div className="relative group">
-                    <pre className="bg-surface-container-low p-5 rounded-lg overflow-x-auto my-6 border border-outline-variant/20 font-mono text-[11px] leading-relaxed shadow-inner" {...props} />
-                  </div>
-                ),
-                code: ({ node, inline, ...props }: any) => inline ? (
-                  <code className="bg-surface-container px-1.5 py-0.5 rounded font-mono text-[11px] text-primary font-semibold" {...props} />
-                ) : (
-                  <code className="block text-primary" {...props} />
-                )
-              }}
+        <div className="bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/10 relative flex flex-col overflow-hidden">
+          
+          {/* Tabs Header */}
+          <div className="flex border-b border-outline-variant/20 bg-surface-container-low px-6 pt-4 shrink-0">
+            <button
+              onClick={() => setActiveTab('report')}
+              className={cn(
+                "px-6 py-3 font-bold text-sm border-b-2 transition-colors",
+                activeTab === 'report' ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"
+              )}
             >
-              {report}
-            </ReactMarkdown>
+              Analysis Report
+            </button>
+            <button
+              onClick={() => setActiveTab('checklist')}
+              className={cn(
+                "px-6 py-3 font-bold text-sm border-b-2 transition-colors flex items-center gap-2",
+                activeTab === 'checklist' ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"
+              )}
+            >
+              Quality Audit Checklist
+              {checklistItems && checklistItems.length > 0 && (
+                <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full">{checklistItems.length}</span>
+              )}
+            </button>
+          </div>
+
+          {/* Tabs Content */}
+          <div className="p-8 flex-1 overflow-auto max-h-[800px]">
+            {activeTab === 'report' && (
+              <div className="text-on-surface">
+                {report ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h1: ({ node, ...props }) => <h1 className="text-4xl font-headline font-semibold text-primary mt-6 mb-4" {...props} />,
+                      h2: ({ node, ...props }) => <h2 className="text-3xl font-headline font-semibold text-on-surface mt-8 mb-4 pb-2 border-b border-outline-variant/30" {...props} />,
+                      h3: ({ node, ...props }) => <h3 className="text-xl font-headline font-bold text-on-surface mt-5 mb-2" {...props} />,
+                      p: ({ node, ...props }) => <p className="text-on-surface-variant leading-relaxed mb-4 text-sm" {...props} />,
+                      ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
+                      ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
+                      li: ({ node, ...props }) => <li className="pl-1" {...props} />,
+                      table: ({ node, ...props }) => <div className="overflow-x-auto my-6"><table className="w-full border-collapse border border-outline-variant/20 rounded-lg text-sm" {...props} /></div>,
+                      thead: ({ node, ...props }) => <thead className="bg-surface-container-high text-on-surface font-bold text-left" {...props} />,
+                      tbody: ({ node, ...props }) => <tbody className="divide-y divide-outline-variant/10 text-on-surface" {...props} />,
+                      tr: ({ node, ...props }) => <tr className="hover:bg-surface-container-low/30 transition-colors" {...props} />,
+                      th: ({ node, ...props }) => <th className="p-3 border-b border-outline-variant/20 font-bold text-on-surface text-xs uppercase tracking-wider" {...props} />,
+                      td: ({ node, ...props }) => <td className="p-3 align-top leading-relaxed text-on-surface-variant" {...props} />,
+                      code: ({ node, className, children, ...props }: any) => {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return match ? (
+                          <div className="rounded-md overflow-hidden my-4 border border-outline-variant/20">
+                            <div className="bg-surface-container-high px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
+                              <Code className="w-3 h-3" />
+                              {match[1]}
+                            </div>
+                            <pre className="bg-[#1e1e1e] p-4 overflow-x-auto text-sm">
+                              <code className="text-[#d4d4d4] font-mono" {...props}>{children}</code>
+                            </pre>
+                          </div>
+                        ) : (
+                          <code className="bg-surface-container-low text-primary px-1.5 py-0.5 rounded text-sm font-mono border border-primary/10" {...props}>
+                            {children}
+                          </code>
+                        )
+                      }
+                    }}
+                  >
+                    {report}
+                  </ReactMarkdown>
+                ) : (
+                  <p className="text-center text-on-surface-variant italic py-8">Report data is empty.</p>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'checklist' && (
+              <div className="space-y-6">
+                {(!checklistItems || checklistItems.length === 0) ? (
+                  <p className="text-center text-on-surface-variant italic py-8">No checklist items generated.</p>
+                ) : (
+                  checklistItems.map((item) => (
+                    <div key={item.id} className={cn(
+                      "group transition-all duration-300 p-6 flex items-start gap-6 rounded-xl relative overflow-hidden border shadow-[0_1px_2px_rgba(0,0,0,0.02)]",
+                      item.status === 'complete' ? "bg-emerald-50/20 border-emerald-200/50 hover:bg-emerald-50/40" :
+                        item.status === 'warning' ? "bg-amber-50/20 border-amber-200/50 hover:bg-amber-50/40" :
+                          "bg-slate-50/40 border-slate-200/60 hover:bg-slate-50/60"
+                    )}>
+                      <div className={cn(
+                        "w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-lg shadow-sm mt-1",
+                        item.status === 'complete' ? "bg-white text-emerald-600 border border-emerald-100" :
+                          item.status === 'warning' ? "bg-white text-amber-600 border border-amber-100" :
+                            "bg-white text-slate-500 border border-slate-100"
+                      )}>
+                        {item.status === 'complete' ? <CheckCircle2 className="w-6 h-6" /> : item.status === 'warning' ? <AlertTriangle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-[10px] font-mono font-bold text-on-surface-variant opacity-60">ID: {item.id}</span>
+                        </div>
+                        <h5 className="font-headline font-bold text-on-surface text-base">{item.title}</h5>
+                        <p className="text-sm text-on-surface-variant">{item.description}</p>
+
+                        <div className="flex items-center gap-1 mt-3 text-[11px] font-bold tracking-tight">
+                          {item.status === 'complete' ? (
+                            <span className="text-emerald-700 flex items-center gap-1">✅ Verified & Approved — Ready for deployment.</span>
+                          ) : item.status === 'warning' ? (
+                            <span className="text-amber-700 flex items-center gap-1">⚠️ Attention — Security or architecture concern detected. Certification recommended.</span>
+                          ) : (
+                            <span className="text-slate-600 flex items-center gap-1">⏳ 정보 부족으로 인해 판단이 보류되었습니다. 상세 설계를 확인해 주세요.</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className={cn(
+                          "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm",
+                          item.status === 'complete' ? "bg-emerald-100/80 text-emerald-800" : item.status === 'warning' ? "bg-amber-100/80 text-amber-800" : "bg-slate-100/80 text-slate-700"
+                        )}>
+                          {item.status === 'complete' ? 'Passed' : item.status === 'warning' ? 'Warning' : 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 };
-
 
 const TerraformPage = ({ files }: { files: { [filename: string]: string } }) => {
   const fileNames = Object.keys(files);
@@ -859,7 +873,6 @@ export default function App() {
     let finalPrompt = promptText;
     if (metadata) {
       finalPrompt += `\n\n[📋 Infrastructure Operational Goals]\n- Recovery Time Objective (RTO): ${metadata.rto}\n- Availability (SLA) Goal: ${metadata.availability}\n- Estimated Traffic Scale: ${metadata.traffic}`;
-      finalPrompt += `\n- Deployment: Kubernetes based architecture ${metadata.isContainer ? 'Enabled' : 'Disabled'}`;
       finalPrompt += `\n- Monitoring/Logging: Centralized logging and monitoring ${metadata.isMonitoring ? 'Enabled' : 'Disabled'}`;
       finalPrompt += `\n- Architecture Style: Microservices (MSA) style ${metadata.isMsa ? 'Enabled' : 'Disabled'}`;
     }
@@ -916,6 +929,7 @@ export default function App() {
           setMessages(prev => [...prev, agentMsg]);
 
           let navigated = false;
+          let hasChecklistData = false;
           let isMappingOrCode = false;
 
           // 1. JSON Data Extraction for visual tabs
@@ -946,7 +960,7 @@ export default function App() {
                         title: item.check || item.title || "N/A",
                         description: item.details || item.description || item.note || "",
                         status: (item.status?.toLowerCase() === 'warning' || item.status?.toLowerCase() === 'error') ? 'warning' : 
-                                (item.status?.toLowerCase() === 'complete' || item.status?.toLowerCase() === 'passed') ? 'complete' : 'pending'
+                                (item.status?.toLowerCase() === 'complete' || item.status?.toLowerCase() === 'passed' || item.status?.toLowerCase() === 'pass') ? 'complete' : 'pending'
                       }));
                     } else {
                       // 평탄한 리스트인 경우
@@ -955,20 +969,20 @@ export default function App() {
                         title: node.check || node.title || "N/A",
                         description: node.details || node.description || node.note || "",
                         status: (node.status?.toLowerCase() === 'warning' || node.status?.toLowerCase() === 'error') ? 'warning' : 
-                                (node.status?.toLowerCase() === 'complete' || node.status?.toLowerCase() === 'passed') ? 'complete' : 'pending'
+                                (node.status?.toLowerCase() === 'complete' || node.status?.toLowerCase() === 'passed' || node.status?.toLowerCase() === 'pass') ? 'complete' : 'pending'
                       }];
                     }
                   });
 
                   setChecklist(flatChecklist);
-                  setActivePage('checklist');
-                  navigated = true;
+                  hasChecklistData = flatChecklist.length > 0;
+                  // 🛡️ [수정] 즉시 페이지 이동 대신 데이터만 저장합니다. 이동은 하단 리포트 체크 로직에서 통합 제어합니다.
                 }
 
                 const mappingData = parsed.mappings || parsed.mappings_results;
                 if (mappingData) {
                   setMappings(mappingData);
-                  setActivePage('mapping'); // 매핑 페이지로 이동
+                  setActivePage('mapping'); // 매핑은 별도의 명확한 단계이므로 유지
                   navigated = true;
                   isMappingOrCode = true;
                 }
@@ -978,14 +992,17 @@ export default function App() {
             }
           }
 
-          // 2. Terraform HCL Extraction
-          if (fullText.includes("```hcl") || fullText.includes("```terraform")) {
-            isMappingOrCode = true;
-          }
-
-          // 🛡️ [수정] 분석 보고서 형식을 갖춘 경우(헤더 포함)에만 리포트 내용을 업데이트합니다.
-          if (cleanText.includes("### 📊") || cleanText.includes("### 🌐") || cleanText.includes("### 📋")) {
-            setAnalysisReport(cleanText); 
+          // 🛡️ [수정] 4단계 워크플로우에 맞춘 네비게이션
+          if (cleanText.includes("### 📊") || cleanText.includes("### 🌐")) {
+            // Step 1: 분석 결과 도착
+            setAnalysisReport(cleanText);
+            setActivePage('analysis');
+            navigated = true;
+          } else if (hasChecklistData) {
+            // Step 2: 체크리스트 데이터 도착
+            // AnalysisPage 내부의 Checklist 탭에서 볼 수 있도록 설정
+            setActivePage('analysis'); 
+            navigated = true;
           }
 
           // 2. Terraform HCL Extraction
@@ -1059,12 +1076,11 @@ export default function App() {
                     handleRunAgent(d, m, f);
                   }} isLoading={isLoading} />
                 )}
-                {activePage === 'analysis' && <AnalysisPage report={analysisReport} awaitingApproval={awaitingApproval} onConfirm={() => handleRunAgent("APPROVE_ANALYSIS")} onFeedback={(text) => handleRunAgent(text)} isLoading={isLoading} setLoadingMsg={setLoadingMsg} />}
+                {activePage === 'analysis' && <AnalysisPage report={analysisReport} checklistItems={checklist} awaitingApproval={awaitingApproval} onConfirm={() => handleRunAgent("APPROVE_ANALYSIS")} onFeedback={(text) => handleRunAgent(text)} isLoading={isLoading} setLoadingMsg={setLoadingMsg} />}
                 {activePage === 'mapping' && (
                   <MappingPage mappings={mappings} onConfirm={() => handleRunAgent("APPROVE_MAPPING")} awaitingApproval={awaitingApproval} isLoading={isLoading} />
                 )}
-                {activePage === 'checklist' && <ChecklistPage items={checklist} onConfirm={() => handleRunAgent("APPROVE_CHECKLIST")} onFeedback={(text) => handleRunAgent(text)} awaitingApproval={awaitingApproval} isLoading={isLoading} />}
-                {activePage === 'terraform' && <TerraformPage files={terraformFiles} />}
+                                {activePage === 'terraform' && <TerraformPage files={terraformFiles} />}
               </motion.div>
             </AnimatePresence>
 
