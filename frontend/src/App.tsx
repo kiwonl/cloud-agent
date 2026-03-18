@@ -42,6 +42,44 @@ import { Page, NavItem, VerificationItem, MappingItem, ChatMessage } from './typ
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+
+
+
+// --- Common Markdown Styles ---
+const SharedMarkdownComponents = {
+  h1: ({ node, ...props }: any) => <h1 className="text-2xl font-headline font-bold text-primary mt-8 mb-4" {...props} />,
+  h2: ({ node, ...props }: any) => <h2 className="text-xl font-headline font-bold text-on-surface mt-8 mb-3 pb-2 border-b border-outline-variant/30" {...props} />,
+  h3: ({ node, ...props }: any) => <h3 className="text-lg font-headline font-semibold text-on-surface mt-6 mb-2" {...props} />,
+  h4: ({ node, ...props }: any) => <h4 className="text-base font-headline font-medium text-on-surface mt-4 mb-2" {...props} />,
+  p: ({ node, ...props }: any) => <p className="text-on-surface-variant leading-relaxed mb-4 text-sm" {...props} />,
+  ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
+  ol: ({ node, ...props }: any) => <ol className="list-decimal pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
+  li: ({ node, ...props }: any) => <li className="pl-1 leading-relaxed" {...props} />,
+  strong: ({ node, ...props }: any) => <strong className="font-bold text-primary/90" {...props} />,
+  table: ({ node, ...props }: any) => <div className="overflow-x-auto my-6"><table className="w-full border-collapse border border-outline-variant/20 rounded-lg text-sm" {...props} /></div>,
+  thead: ({ node, ...props }: any) => <thead className="bg-surface-container-high text-on-surface font-bold text-left" {...props} />,
+  tbody: ({ node, ...props }: any) => <tbody className="divide-y divide-outline-variant/10 text-on-surface" {...props} />,
+  tr: ({ node, ...props }: any) => <tr className="hover:bg-surface-container-low/30 transition-colors" {...props} />,
+  th: ({ node, ...props }: any) => <th className="p-3 border-b border-outline-variant/20 font-bold text-on-surface text-xs uppercase tracking-wider bg-surface-container" {...props} />,
+  td: ({ node, ...props }: any) => <td className="p-3 align-top leading-relaxed text-on-surface-variant" {...props} />,
+  code: ({ node, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || '');
+    return match ? (
+      <div className="rounded-md overflow-hidden my-4 border border-outline-variant/20 shadow-sm">
+        <div className="bg-surface-container-high px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
+          <Code className="w-3 h-3" />
+          {match[1]}
+        </div>
+        <pre className="bg-[#1e1e1e] p-4 overflow-x-auto text-sm">
+          <code className="text-[#d4d4d4] font-mono" {...props}>{children}</code>
+        </pre>
+      </div>
+    ) : (
+      <code className="bg-surface-container-low text-primary px-1.5 py-0.5 rounded text-sm font-mono border border-primary/10" {...props}>{children}</code>
+    );
+  }
+};
+
 // --- Components ---
 
 const Sidebar = ({ activePage, onPageChange }: { activePage: Page, onPageChange: (page: Page) => void }) => {
@@ -498,17 +536,7 @@ const MappingPage = ({ mappings, report, onConfirm, awaitingApproval, isLoading 
           <div className="bg-surface-container-lowest p-8 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-outline-variant/10">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ node, ...props }) => <h1 className="text-3xl font-headline font-semibold text-primary mb-4" {...props} />,
-                h2: ({ node, ...props }) => <h2 className="text-2xl font-headline font-semibold text-on-surface mt-6 mb-3 pb-2 border-b border-outline-variant/20" {...props} />,
-                h3: ({ node, ...props }) => <h3 className="text-lg font-headline font-bold text-on-surface mt-6 mb-2 flex items-center gap-2" {...props} />,
-                p: ({ node, ...props }) => <p className="text-on-surface-variant leading-relaxed mb-4 text-sm" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
-                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
-                li: ({ node, ...props }) => <li className="pl-1" {...props} />,
-                strong: ({ node, ...props }) => <strong className="font-bold text-primary/90" {...props} />
-              }}
-            >
+              components={SharedMarkdownComponents}>
               {report}
             </ReactMarkdown>
           </div>
@@ -564,38 +592,7 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
                 {report ? (
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: ({ node, ...props }) => <h1 className="text-4xl font-headline font-semibold text-primary mt-6 mb-4" {...props} />,
-                      h2: ({ node, ...props }) => <h2 className="text-3xl font-headline font-semibold text-on-surface mt-8 mb-4 pb-2 border-b border-outline-variant/30" {...props} />,
-                      h3: ({ node, ...props }) => <h3 className="text-xl font-headline font-bold text-on-surface mt-5 mb-2" {...props} />,
-                      p: ({ node, ...props }) => <p className="text-on-surface-variant leading-relaxed mb-4 text-sm" {...props} />,
-                      ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
-                      ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
-                      li: ({ node, ...props }) => <li className="pl-1" {...props} />,
-                      table: ({ node, ...props }) => <div className="overflow-x-auto my-6"><table className="w-full border-collapse border border-outline-variant/20 rounded-lg text-sm" {...props} /></div>,
-                      thead: ({ node, ...props }) => <thead className="bg-surface-container-high text-on-surface font-bold text-left" {...props} />,
-                      tbody: ({ node, ...props }) => <tbody className="divide-y divide-outline-variant/10 text-on-surface" {...props} />,
-                      tr: ({ node, ...props }) => <tr className="hover:bg-surface-container-low/30 transition-colors" {...props} />,
-                      th: ({ node, ...props }) => <th className="p-3 border-b border-outline-variant/20 font-bold text-on-surface text-xs uppercase tracking-wider" {...props} />,
-                      td: ({ node, ...props }) => <td className="p-3 align-top leading-relaxed text-on-surface-variant" {...props} />,
-                      code: ({ node, className, children, ...props }: any) => {
-                        const match = /language-(\w+)/.exec(className || '')
-                        return match ? (
-                          <div className="rounded-md overflow-hidden my-4 border border-outline-variant/20">
-                            <div className="bg-surface-container-high px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
-                              <Code className="w-3 h-3" />
-                              {match[1]}
-                            </div>
-                            <pre className="bg-[#1e1e1e] p-4 overflow-x-auto text-sm">
-                              <code className="text-[#d4d4d4] font-mono" {...props}>{children}</code>
-                            </pre>
-                          </div>
-                        ) : (
-                          <code className="bg-surface-container-low text-primary px-1.5 py-0.5 rounded text-sm font-mono border border-primary/10" {...props}>{children}</code>
-                        )
-                      }
-                    }}
-                  >
+                    components={SharedMarkdownComponents}>
                     {report}
                   </ReactMarkdown>
                 ) : (
@@ -647,7 +644,7 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
   );
 };
 
-const TerraformPage = ({ files }: { files: { [filename: string]: string } }) => {
+const TerraformPage = ({ files, report }: { files: { [filename: string]: string }, report?: string }) => {
   const fileNames = Object.keys(files);
   const [activeTab, setActiveTab] = useState<string>(fileNames[0] || 'main.tf');
   const code = files[activeTab] || "";
@@ -685,47 +682,71 @@ const TerraformPage = ({ files }: { files: { [filename: string]: string } }) => 
       {fileNames.length === 0 ? (
         <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No Terraform code generated yet. Please complete the mapping phase.</p>
       ) : (
-        <div className="bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/20 overflow-hidden flex h-[600px]">
-          <div className="w-[240px] bg-surface-container-low border-r border-outline-variant/20 flex flex-col">
-            <div className="p-4 border-b border-outline-variant/10">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
-                <FileText className="w-3 h-3" /> Project Files
-              </h3>
-            </div>
-            <div className="flex-1 overflow-y-auto py-2">
-              {fileNames.map(name => (
-                <button
-                  key={name}
-                  onClick={() => setActiveTab(name)}
-                  className={cn("w-full text-left px-4 py-2 text-sm font-mono transition-colors border-l-2", activeTab === name ? "bg-primary/10 text-primary border-primary font-bold" : "text-on-surface-variant border-transparent hover:bg-surface-container hover:text-on-surface")}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div className="flex-1 flex flex-col min-w-0 bg-[#ffffff]">
-            <div className="h-12 border-b border-outline-variant/10 bg-surface flex items-center justify-between px-4">
-              <div className="flex items-center gap-2 text-sm font-mono font-bold text-on-surface">
-                <Code className="w-4 h-4 text-primary" /> {activeTab}
+        <>
+          <div className="bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/20 overflow-hidden flex h-[600px]">
+            <div className="w-[240px] bg-surface-container-low border-r border-outline-variant/20 flex flex-col">
+              <div className="p-4 border-b border-outline-variant/10">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
+                  <FileText className="w-3 h-3" /> Project Files
+                </h3>
               </div>
-              <button onClick={handleCopyCode} className="text-on-surface-variant hover:text-primary transition-colors p-1.5 rounded hover:bg-surface-container" title="Copy code">
-                <Copy className="w-4 h-4" />
-              </button>
+              <div className="flex-1 overflow-y-auto py-2">
+                {fileNames.map(name => (
+                  <button
+                    key={name}
+                    onClick={() => setActiveTab(name)}
+                    className={cn("w-full text-left px-4 py-2 text-sm font-mono transition-colors border-l-2", activeTab === name ? "bg-primary/10 text-primary border-primary font-bold" : "text-on-surface-variant border-transparent hover:bg-surface-container hover:text-on-surface")}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex-grow overflow-auto font-mono text-sm bg-[#ffffff] py-4">
-              {code.trim().split("\n").map((line, i) => (
-                <div key={i} className="flex hover:bg-surface-container-low/30 px-4 leading-6 w-max min-w-full">
-                  <div className="w-10 text-on-surface-variant/40 select-none text-right pr-3 font-mono border-r border-outline-variant/10 mr-4 shrink-0 sticky left-0 bg-[#ffffff]">
-                    {(i + 1).toString().padStart(2, '0')}
-                  </div>
-                  <pre className="whitespace-pre text-[#24292e] font-mono">{line || " "}</pre>
+            
+            <div className="flex-1 flex flex-col min-w-0 bg-[#ffffff]">
+              <div className="h-12 border-b border-outline-variant/10 bg-surface flex items-center justify-between px-4">
+                <div className="flex items-center gap-2 text-sm font-mono font-bold text-on-surface">
+                  <Code className="w-4 h-4 text-primary" /> {activeTab}
                 </div>
-              ))}
+                <button onClick={handleCopyCode} className="text-on-surface-variant hover:text-primary transition-colors p-1.5 rounded hover:bg-surface-container" title="Copy code">
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex-grow overflow-auto font-mono text-sm bg-[#ffffff] py-4">
+                {code.trim().split("\n").map((line, i) => (
+                  <div key={i} className="flex hover:bg-surface-container-low/30 px-4 leading-6 w-max min-w-full">
+                    <div className="w-10 text-on-surface-variant/40 select-none text-right pr-3 font-mono border-r border-outline-variant/10 mr-4 shrink-0 sticky left-0 bg-[#ffffff]">
+                      {(i + 1).toString().padStart(2, '0')}
+                    </div>
+                    <pre className="whitespace-pre text-[#24292e] font-mono">{line || " "}</pre>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* 🛡️ [수정] 테라폼 코드 분석 리포트 하단 렌더링 */}
+          {report && (
+            <div className="mt-8 pt-8 border-t border-outline-variant/20">
+              <div className="bg-surface-container-lowest p-8 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-outline-variant/10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-headline font-bold text-xl text-on-surface">Architecture Analysis & Compliance</h3>
+                    <p className="text-xs text-on-surface-variant">Explanation of security posture, scaling features, and code structure.</p>
+                  </div>
+                </div>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={SharedMarkdownComponents}>
+                  {report}
+                </ReactMarkdown>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -737,6 +758,7 @@ export default function App() {
   const [checklist, setChecklist] = useState<VerificationItem[]>([]);
   const [analysisReport, setAnalysisReport] = useState<string>("");
   const [mappingReport, setMappingReport] = useState<string>("");
+  const [terraformReport, setTerraformReport] = useState<string>("");
   const [terraformFiles, setTerraformFiles] = useState<{ [filename: string]: string }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -853,11 +875,17 @@ export default function App() {
                 if (mappingData) {
                   setMappings(mappingData);
                   
-                  // Extract non-JSON markdown for the report, explicitly ignoring the JSON block itself
+                  // Extract non-JSON markdown for the report, cutting off at the System Integration Data section
                   let textOnly = cleanText;
-                  const jsonStart = textOnly.indexOf("```json");
-                  if (jsonStart !== -1) {
-                    textOnly = textOnly.substring(0, jsonStart).trim();
+                  const cutoffPoints = [
+                    textOnly.indexOf("### ⚙️ System Integration Data"),
+                    textOnly.indexOf("```json")
+                  ].filter(index => index !== -1);
+                  
+                  if (cutoffPoints.length > 0) {
+                    // Find the earliest occurrence to slice from
+                    const sliceIndex = Math.min(...cutoffPoints);
+                    textOnly = textOnly.substring(0, sliceIndex).trim();
                   }
                   
                   if (textOnly) {
@@ -874,11 +902,21 @@ export default function App() {
           }
 
           const files: { [key: string]: string } = {};
+          let tfReportStr = "";
+
           const segments = fullText.split("### ");
           for (let i = 1; i < segments.length; i++) {
             const segment = segments[i];
             const lines = segment.split("\n");
-            let filename = lines[0].trim().replace("[", "").replace("]", "");
+            let header = lines[0].trim().replace("[", "").replace("]", "");
+
+            // 파서: '📝' 기호가 있거나 'Terraform Architecture Analysis' 헤더가 있으면 리포트로 취급
+            if (header.includes("📝") || header.toLowerCase().includes("analysis")) {
+               tfReportStr = lines.slice(1).join("\n").trim();
+               continue;
+            }
+
+            let filename = header;
             if (!filename.includes(".tf")) filename = filename + ".tf"; 
             
             if (segment.includes("```hcl")) {
@@ -886,6 +924,10 @@ export default function App() {
             } else if (segment.includes("```terraform")) {
               files[filename] = segment.split("```terraform")[1].split("```")[0];
             }
+          }
+
+          if (tfReportStr) {
+            setTerraformReport(tfReportStr);
           }
 
           if (Object.keys(files).length === 0) {
@@ -954,7 +996,7 @@ ${safeMappings}`;
                   } catch (e) {
                   }
                 }} awaitingApproval={awaitingApproval} isLoading={isLoading} />}
-                {activePage === 'terraform' && <TerraformPage files={terraformFiles} />}
+                {activePage === 'terraform' && <TerraformPage files={terraformFiles} report={terraformReport} />}
               </motion.div>
             </AnimatePresence>
             {isLoading && (
