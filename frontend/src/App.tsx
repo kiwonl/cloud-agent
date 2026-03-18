@@ -424,7 +424,7 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
   );
 };
 
-const MappingPage = ({ mappings, onConfirm, awaitingApproval, isLoading }: { mappings: MappingItem[], onConfirm: () => void, awaitingApproval: boolean, isLoading: boolean }) => {
+const MappingPage = ({ mappings, report, onConfirm, awaitingApproval, isLoading }: { mappings: MappingItem[], report: string, onConfirm: () => void, awaitingApproval: boolean, isLoading: boolean }) => {
   return (
     <div className="space-y-10">
       <PageHeader step="Step 03" title="Service Mapping" description="Automated translation of source infrastructure into target-native cloud services." />
@@ -492,6 +492,28 @@ const MappingPage = ({ mappings, onConfirm, awaitingApproval, isLoading }: { map
           ))
         )}
       </div>
+
+      {report && (
+        <div className="mt-16 pt-10 border-t border-outline-variant/20">
+          <div className="bg-surface-container-lowest p-8 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-outline-variant/10">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ node, ...props }) => <h1 className="text-3xl font-headline font-semibold text-primary mb-4" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="text-2xl font-headline font-semibold text-on-surface mt-6 mb-3 pb-2 border-b border-outline-variant/20" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="text-lg font-headline font-bold text-on-surface mt-6 mb-2 flex items-center gap-2" {...props} />,
+                p: ({ node, ...props }) => <p className="text-on-surface-variant leading-relaxed mb-4 text-sm" {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
+                li: ({ node, ...props }) => <li className="pl-1" {...props} />,
+                strong: ({ node, ...props }) => <strong className="font-bold text-primary/90" {...props} />
+              }}
+            >
+              {report}
+            </ReactMarkdown>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -509,7 +531,7 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
           description="Architecture analysis and quality audit complete. Proceed to GCP Resource Mapping?"
           confirmText="Approve & Proceed"
           onConfirm={() => {
-            setLoadingMsg("✅ Approval complete. Generating GCP service mappings...");
+            setLoadingMsg("✅ Approval complete. Generating Terraform Codes for Google Cloud...");
             onConfirm();
           }}
           onFeedback={(text) => {
@@ -693,12 +715,12 @@ const TerraformPage = ({ files }: { files: { [filename: string]: string } }) => 
               </button>
             </div>
             <div className="flex-grow overflow-auto font-mono text-sm bg-[#ffffff] py-4">
-              {code.split("\n").map((line, i) => (
-                <div key={i} className="flex items-start hover:bg-surface-container-low/30 px-4 leading-6">
-                  <div className="w-10 text-on-surface-variant/40 select-none text-right pr-3 font-mono border-r border-outline-variant/10 mr-4 shrink-0">
+              {code.trim().split("\n").map((line, i) => (
+                <div key={i} className="flex hover:bg-surface-container-low/30 px-4 leading-6 w-max min-w-full">
+                  <div className="w-10 text-on-surface-variant/40 select-none text-right pr-3 font-mono border-r border-outline-variant/10 mr-4 shrink-0 sticky left-0 bg-[#ffffff]">
                     {(i + 1).toString().padStart(2, '0')}
                   </div>
-                  <pre className="flex-1 whitespace-pre-wrap break-all text-[#24292e] font-mono">{line || " "}</pre>
+                  <pre className="whitespace-pre text-[#24292e] font-mono">{line || " "}</pre>
                 </div>
               ))}
             </div>
@@ -714,6 +736,7 @@ export default function App() {
   const [mappings, setMappings] = useState<MappingItem[]>([]);
   const [checklist, setChecklist] = useState<VerificationItem[]>([]);
   const [analysisReport, setAnalysisReport] = useState<string>("");
+  const [mappingReport, setMappingReport] = useState<string>("");
   const [terraformFiles, setTerraformFiles] = useState<{ [filename: string]: string }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -829,6 +852,18 @@ export default function App() {
                 const mappingData = parsed.mappings || parsed.mappings_results;
                 if (mappingData) {
                   setMappings(mappingData);
+                  
+                  // Extract non-JSON markdown for the report, explicitly ignoring the JSON block itself
+                  let textOnly = cleanText;
+                  const jsonStart = textOnly.indexOf("```json");
+                  if (jsonStart !== -1) {
+                    textOnly = textOnly.substring(0, jsonStart).trim();
+                  }
+                  
+                  if (textOnly) {
+                    setMappingReport(textOnly);
+                  }
+
                   setActivePage('mapping'); 
                   navigated = true;
                 }
@@ -901,10 +936,21 @@ export default function App() {
                     handleRunAgent(`다음 AWS 아키텍처 분석 결과를 바탕으로 GCP 리소스로 매핑(번역)해 주세요.\n\n${analysisReport}`, null, null, "translator");
                   }
                 }} onFeedback={(text) => handleRunAgent(text, null, null, "aws_analyzer")} isLoading={isLoading} setLoadingMsg={setLoadingMsg} />}
-                {activePage === 'mapping' && <MappingPage mappings={mappings} onConfirm={() => {
+                {activePage === 'mapping' && <MappingPage mappings={mappings} report={mappingReport} onConfirm={() => {
                   try {
                     const safeMappings = Array.isArray(mappings) ? JSON.stringify(mappings) : "[]";
-                    handleRunAgent(`다음 GCP 매핑 결과를 바탕으로 Terraform 코드를 생성해 주세요.\n\n${safeMappings}`, null, null, "generator");
+                    const generatorPrompt = `다음은 AWS에서 GCP로 마이그레이션하기 위한 종합 아키텍처 데이터입니다. 이 데이터를 완벽하게 분석하여 Production-Ready 수준의 엔터프라이즈 GCP Terraform 코드를 생성해 주세요.
+
+--- [1. 원본 아키텍처 스펙 및 분석 데이터 (System Integration Data)] ---
+${analysisReport}
+
+--- [2. GCP 네이티브 아키텍처 최적화 설계 가이드] ---
+${mappingReport}
+
+--- [3. 리소스 1:1 매핑 변환표] ---
+${safeMappings}`;
+
+                    handleRunAgent(generatorPrompt, null, null, "generator");
                   } catch (e) {
                   }
                 }} awaitingApproval={awaitingApproval} isLoading={isLoading} />}
