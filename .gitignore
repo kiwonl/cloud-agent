@@ -32,7 +32,6 @@ yarn-error.log*
 
 # Project Specific
 data/
-orchestrator_debug_msg_exact.txt
 logs/
 .adk/
 .terraform/
@@ -40,3 +39,16 @@ logs/
 *.tfstate.backup
 .env.*
 !.env.template
+
+# Debugging and Temporary Scripts
+orchestrator_debug_msg_exact.txt
+patch_*.py
+fix_*.py
+update_*.py
+rewrite_*.py
+verify_*.py
+debug_*.py
+build_*.py
+force_*.py
+tmp_*.txt
+*.tmp

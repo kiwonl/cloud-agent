@@ -46,375 +46,107 @@ import remarkGfm from 'remark-gfm';
 
 const Sidebar = ({ activePage, onPageChange }: { activePage: Page, onPageChange: (page: Page) => void }) => {
   const navItems: NavItem[] = [
-    { id: 'upload', label: 'Architecture Upload', icon: 'CloudUpload' },
+    { id: 'upload', label: 'Architecture Register', icon: 'CloudUpload' },
     { id: 'analysis', label: 'Analysis Report', icon: 'FileText' },
-        { id: 'mapping', label: 'Service Mapping', icon: 'MapIcon' },
+    { id: 'mapping', label: 'Service Mapping', icon: 'MapIcon' },
     { id: 'terraform', label: 'Terraform Output', icon: 'Code' },
   ];
 
-  const IconMap: Record<string, any> = {
-    CloudUpload, FileText, MapIcon, ClipboardCheck, Code
+  const getIcon = (name: string) => {
+    const icons: { [key: string]: any } = { CloudUpload, MapIcon, ClipboardCheck, Code, FileText };
+    const Icon = icons[name] || HelpCircle;
+    return <Icon className="w-5 h-5" />;
   };
 
   return (
-    <aside className="h-screen w-72 left-0 top-0 sticky bg-surface-container-low flex flex-col p-6 gap-y-4 shrink-0 overflow-y-auto border-r border-outline-variant/10">
-      <div className="mb-8 px-2">
-        <h1 className="text-lg font-black text-primary font-headline tracking-tighter">Google Cloud AI Agent</h1>
-        <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1 opacity-70 font-bold">V-0.0.1</p>
+    <aside className="w-[280px] bg-surface border-r border-outline-variant/20 flex flex-col h-screen shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10 relative">
+      <div className="h-20 flex items-center px-8 border-b border-outline-variant/20 bg-surface-container-lowest">
+        {/* Placeholder to maintain height and layout alignment with TopBar */}
       </div>
-
-      <nav className="flex-grow space-y-1">
-        {navItems.map((item) => {
-          const Icon = IconMap[item.icon];
-          const isActive = activePage === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onPageChange(item.id)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300 text-sm font-medium",
-                isActive
-                  ? "bg-surface-container-lowest text-primary font-semibold shadow-[0_40px_40px_-5px_rgba(25,28,29,0.06)]"
-                  : "text-on-surface-variant hover:bg-surface-container-lowest/50"
-              )}
-            >
-              <Icon className="w-5 h-5" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
+      <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => onPageChange(item.id)}
+            className={cn(
+              "w-full flex items-center gap-4 px-4 py-3.5 rounded-xl font-bold text-sm transition-all duration-300 relative group",
+              activePage === item.id
+                ? "bg-primary/10 text-primary"
+                : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+            )}
+          >
+            {activePage === item.id && (
+              <motion.div layoutId="active-indicator" className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />
+            )}
+            <span className={cn("transition-colors", activePage === item.id ? "text-primary" : "text-on-surface-variant group-hover:text-primary")}>
+              {getIcon(item.icon)}
+            </span>
+            {item.label}
+          </button>
+        ))}
       </nav>
-
-
+      
+      <div className="p-6 border-t border-outline-variant/20 bg-surface-container-lowest">
+        <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 relative overflow-hidden group hover:border-primary/30 transition-colors">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+          <h4 className="font-headline font-bold text-sm mb-1 text-on-surface">Agent Status</h4>
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            Online & Ready
+          </div>
+        </div>
+      </div>
     </aside>
   );
 };
 
-const TopBar = () => (
-  <header className="flex justify-between items-center w-full px-8 py-4 bg-surface sticky top-0 z-50 border-b border-outline-variant/5">
-    <div className="flex items-center gap-8">
-      <span className="text-xl font-bold text-primary tracking-tighter font-headline"></span>
-    </div>
-    <div className="flex items-center gap-4">
-      <button className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
-        <Bell className="w-5 h-5" />
-      </button>
-      <button className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
-        <Settings className="w-5 h-5" />
-      </button>
-      <div className="w-8 h-8 rounded-full overflow-hidden ml-2 bg-surface-container-high border border-outline-variant/20">
-        <img
-          src="https://picsum.photos/seed/architect/100/100"
-          alt="Architect Profile"
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
+const TopBar = () => {
+  return (
+    <header className="h-20 bg-surface-container-lowest border-b border-outline-variant/20 flex items-center justify-between px-8 shrink-0 z-0 shadow-sm relative z-20">
+      <div className="flex-1 flex items-center gap-4">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+           <CloudUpload className="w-6 h-6 text-primary" />
+        </div>
+        <h1 className="font-headline font-extrabold text-2xl tracking-tight text-on-surface bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+          Google Cloud AI Agent
+        </h1>
       </div>
+      <div className="flex items-center gap-4">
+        <button className="p-2.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full ring-2 ring-surface"></span>
+        </button>
+        <button className="p-2.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+          <Settings className="w-5 h-5" />
+        </button>
+        <div className="w-px h-6 bg-outline-variant/30 mx-2" />
+        <div className="flex items-center gap-3 pl-2">
+          <div className="text-right">
+            <p className="text-sm font-bold text-on-surface">Migration Admin</p>
+            <p className="text-[10px] text-on-surface-variant font-mono uppercase tracking-wider">Cloud Architect</p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-secondary to-tertiary flex items-center justify-center text-white font-bold shadow-md ring-2 ring-surface">
+            MA
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+const PageHeader = ({ step, title, description, rightElement }: { step?: string, title: string, description: string, rightElement?: React.ReactNode }) => (
+  <div className="mb-10 flex justify-between items-end">
+    <div>
+      {step && <span className="text-primary font-mono text-[10px] uppercase tracking-[0.2em] font-bold mb-2 block">{step}</span>}
+      <h2 className="text-4xl font-headline font-bold text-on-surface tracking-tight mb-2">{title}</h2>
+      <p className="text-on-surface-variant text-base max-w-2xl">{description}</p>
     </div>
-  </header>
+    {rightElement && <div>{rightElement}</div>}
+  </div>
 );
-
-// --- Floating Chat ---
-
-const FloatingChat = ({ messages, isLoading, onSendMessage }: { messages: ChatMessage[], isLoading: boolean, onSendMessage: (text: string) => void }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [input, setInput] = useState('');
-
-  return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="w-80 h-[450px] bg-surface-container-low rounded-xl shadow-2xl flex flex-col overflow-hidden border border-outline-variant/20 mb-4 glass-panel flex flex-col"
-          >
-            <div className="bg-primary p-3 text-on-primary flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                <span className="font-bold text-xs">Migration Agent</span>
-              </div>
-              <button onClick={() => setIsOpen(false)} className="text-on-primary/70 hover:text-on-primary">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-
-            <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-3 bg-surface-container-lowest/50">
-              {messages.length === 0 && (
-                <div className="flex-1 flex flex-col items-center justify-center text-on-surface-variant/40">
-                  <MessageSquare className="w-10 h-10 mb-2 opacity-20" />
-                  <p className="text-[10px]">No conversation history.</p>
-                </div>
-              )}
-              {messages.map((msg, index) => (
-                <div key={index} className={cn("flex flex-col max-w-[85%] gap-1", msg.role === 'user' ? "self-end items-end" : "self-start items-start")}>
-                  <div className={cn("text-[10px] uppercase tracking-widest font-bold opacity-60 px-1", msg.role === 'user' ? "text-primary/70" : "text-secondary")}>
-                    {msg.role === 'user' ? 'You' : 'Agent'}
-                  </div>
-                  <div className={cn("p-2 rounded-lg text-xs leading-relaxed whitespace-pre-wrap shadow-sm", msg.role === 'user' ? "bg-primary text-on-primary rounded-tr-none" : "bg-surface-container-high text-on-surface rounded-tl-none border border-outline-variant/5")}>
-                    {msg.text}
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="self-start flex flex-col max-w-[85%] gap-1">
-                  <div className="text-[10px] uppercase tracking-widest font-bold opacity-60 px-1 text-secondary">Agent</div>
-                  <div className="p-2 rounded-lg rounded-tl-none bg-surface-container-high border border-outline-variant/5 flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-secondary"></div>
-                    <span className="text-[10px] text-on-surface-variant">Thinking...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              if (input.trim()) {
-                onSendMessage(input);
-                setInput('');
-              }
-            }} className="p-2 border-t border-outline-variant/10 bg-surface-container-low flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type a message..."
-                className="w-full bg-surface-container-lowest border border-outline-variant/30 text-on-surface px-2 py-1.5 rounded-md text-xs focus:border-primary focus:ring-0"
-                disabled={isLoading}
-              />
-              <button type="submit" disabled={isLoading} className="bg-primary text-white px-2.5 rounded-md font-bold text-xs flex items-center justify-center">
-                <Send className="w-3 h-3" />
-              </button>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-12 h-12 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform relative"
-      >
-        <MessageSquare className="w-5 h-5" />
-        {messages.length > 0 && !isOpen && (
-          <span className="absolute top-0 right-0 w-3 h-3 bg-secondary rounded-full animate-ping"></span>
-        )}
-      </button>
-    </div>
-  );
-};
-
-// --- Page Views ---
-
-const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metadata?: any, file?: { type: string, base64: string } | null) => void, isLoading: boolean }) => {
-  const [projectName, setProjectName] = useState('Alpha-Migration-V2');
-  const [desc, setDesc] = useState('');
-
-  const [rto, setRto] = useState('Within 4 hours');
-  const [availability, setAvailability] = useState('Multi-AZ HA');
-  const [traffic, setTraffic] = useState('Medium (1k~10k)');
-
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const [isMsa, setIsMsa] = useState(false);
-
-  const [selectedFile, setSelectedFile] = useState<{ name: string, type: string, base64: string } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const handleFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      const base64 = result.split(',')[1];
-      setSelectedFile({
-        name: file.name,
-        type: file.type,
-        base64: base64
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  return (
-    <div className="space-y-12 relative">
-      <PageHeader
-        title="Architecture Upload"
-        description="Upload your AWS architecture details and operational demands to map resources automatically."
-      />
-
-      <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-12 lg:col-span-4 space-y-8">
-          <section className="bg-surface-container-lowest p-8 rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] space-y-6">
-            <div className="space-y-4">
-              {/* 📝 Service Description */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-primary tracking-widest uppercase">Service Description</h4>
-                <div className="space-y-1">
-                  <textarea
-                    rows={3}
-                    value={desc}
-                    onChange={(e) => setDesc(e.target.value)}
-                    placeholder="Describe the service..."
-                    className="w-full bg-surface-container-low border-none border-b-2 border-primary/20 focus:border-primary focus:ring-0 text-on-surface px-4 py-3 rounded-t-md text-sm resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* 🛡️ Operational Goals */}
-              <div className="pt-4 border-t border-outline-variant/30 space-y-3">
-                <h4 className="text-xs font-bold text-primary tracking-widest uppercase">Operational Goals</h4>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-on-surface-variant ml-1">Recovery Time Objective (RTO)</label>
-                  <select value={rto} onChange={(e) => setRto(e.target.value)} className="w-full bg-surface-container-low border-none border-b border-primary/20 text-on-surface px-3 py-2 rounded text-xs">
-                    <option>Within 1 hour</option>
-                    <option>Within 4 hours</option>
-                    <option>Within 24 hours</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-on-surface-variant ml-1">Availability (SLA) Goal</label>
-                  <select value={availability} onChange={(e) => setAvailability(e.target.value)} className="w-full bg-surface-container-low border-none border-b border-primary/20 text-on-surface px-3 py-2 rounded text-xs">
-                    <option>Single AZ</option>
-                    <option>Multi-AZ HA</option>
-                    <option>Multi-Region DR</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-on-surface-variant ml-1">Estimated Traffic Scale</label>
-                  <select value={traffic} onChange={(e) => setTraffic(e.target.value)} className="w-full bg-surface-container-low border-none border-b border-primary/20 text-on-surface px-3 py-2 rounded text-xs">
-                    <option>Small (&lt; 1k)</option>
-                    <option>Medium (1k~10k)</option>
-                    <option>Large (10k+)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* 🏗️ Architecture */}
-              <div className="pt-4 border-t border-outline-variant/30 space-y-3">
-                <h4 className="text-xs font-bold text-primary tracking-widest uppercase">Architecture</h4>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
-                    <input type="checkbox" checked={isMonitoring} onChange={(e) => setIsMonitoring(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
-                    Centralized Logging & Monitoring
-                  </label>
-                  <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
-                    <input type="checkbox" checked={isMsa} onChange={(e) => setIsMsa(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
-                    Microservices Architecture
-                  </label>
-                </div>
-              </div>
-            </div>
-          </section>
-
-
-        </div>
-
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-8">
-          <div
-            className={cn(
-              "bg-surface-container-lowest p-2 rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] flex-1 min-h-[400px] flex flex-col relative",
-              isDragging && "border-2 border-dashed border-primary bg-primary/5"
-            )}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragging(false);
-              const files = e.dataTransfer.files;
-              if (files && files.length > 0) handleFile(files[0]);
-            }}
-          >
-            <div
-              onClick={() => document.getElementById('architecture-file-input')?.click()}
-              className="h-full flex-1 border-2 border-dashed border-outline-variant rounded-lg flex flex-col items-center justify-center p-12 group hover:border-primary transition-colors cursor-pointer"
-            >
-              <input
-                type="file"
-                id="architecture-file-input"
-                className="hidden"
-                accept="image/*"
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (files && files.length > 0) handleFile(files[0]);
-                }}
-              />
-              <div className="w-20 h-20 bg-surface-container-low rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <CloudUpload className="w-10 h-10 text-primary" />
-              </div>
-              <h3 className="text-2xl font-headline font-bold text-on-surface mb-2">Workspace Console</h3>
-              {selectedFile ? (
-                <div className="text-center flex flex-col items-center">
-                  <img
-                    src={`data:${selectedFile.type};base64,${selectedFile.base64}`}
-                    alt="Architecture Preview"
-                    className="max-h-48 object-contain rounded-lg shadow-md mb-4 border border-outline-variant/30"
-                  />
-                  <p className="text-primary font-bold text-sm mb-1">Selected File: {selectedFile.name}</p>
-                  <p className="text-on-surface-variant text-xs">Click to change file</p>
-                </div>
-              ) : (
-                <p className="text-on-surface-variant text-center max-w-sm mb-8">Execute architecture mapping using description and loaded metadata variables.</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end">
-            <button
-              onClick={() => onAnalyze(desc, { rto, availability, traffic, isMonitoring, isMsa }, selectedFile)}
-              disabled={isLoading || (!desc.trim() && !selectedFile)}
-              className={cn(
-                "bg-gradient-to-r from-primary to-primary-container text-on-primary px-12 py-5 rounded-md font-bold text-lg shadow-xl hover:shadow-primary/20 active:scale-95 transition-all flex items-center gap-3",
-                (isLoading || (!desc.trim() && !selectedFile)) && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              Analyze Architecture
-              <Zap className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const PageHeader = ({
-  step,
-  title,
-  description,
-  rightElement
-}: {
-  step?: string,
-  title: string,
-  description: string,
-  rightElement?: React.ReactNode
-}) => {
-  return (
-    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-      <div>
-        {step && (
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-secondary font-mono text-xs font-bold tracking-widest uppercase">{step}</span>
-            <div className="h-px w-8 bg-secondary/30"></div>
-          </div>
-        )}
-        <h1 className="text-5xl font-bold font-headline tracking-tighter text-on-surface">{title}</h1>
-        <p className="text-on-surface-variant mt-2 max-w-md text-sm font-medium">{description}</p>
-      </div>
-      {rightElement && (
-        <div className="flex items-center">
-          {rightElement}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const ApprovalPanel = ({
   title = "Analysis & Verification Complete - Awaiting Approval",
@@ -446,15 +178,7 @@ const ApprovalPanel = ({
           <p className="text-sm text-on-surface-variant">{description}</p>
         </div>
         <div className="flex gap-3">
-          {onFeedback && (
-            <button
-              onClick={() => setShowFeedbackInput(!showFeedbackInput)}
-              className="bg-surface text-secondary border border-secondary/30 px-6 py-2.5 rounded-md font-bold text-xs hover:bg-surface-container transition-all flex items-center gap-1"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              {feedbackText}
-            </button>
-          )}
+
           <button
             onClick={onConfirm}
             disabled={isLoading}
@@ -466,47 +190,244 @@ const ApprovalPanel = ({
         </div>
       </div>
 
-      {showFeedbackInput && onFeedback && (
-        <div className="bg-surface-container-high p-4 rounded-xl space-y-3 border border-outline-variant/10 animate-fadeIn">
-          <label className="text-xs font-bold text-on-surface-variant ml-1">Adjustment Feedback Form</label>
-          <textarea
-            ref={feedbackInputRef}
-            rows={4}
-            placeholder={feedbackPlaceholder}
-            className="w-full bg-surface-container border border-outline-variant/30 text-on-surface px-4 py-3 rounded-lg text-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-          />
-          <div className="flex justify-end gap-x-2 mt-2">
-            <button onClick={() => setShowFeedbackInput(false)} className="text-xs text-on-surface-variant px-3 py-1.5 rounded hover:bg-surface-container">Cancel</button>
-            <button
-              onClick={() => {
-                const text = feedbackInputRef.current?.value;
-                if (text && text.trim() && onFeedback) {
-                  onFeedback(text);
-                  setShowFeedbackInput(false);
-                }
-              }}
-              disabled={!feedbackInputRef.current?.value.trim() || isLoading}
-              className="bg-primary text-on-primary px-4 py-1.5 rounded text-xs font-bold hover:opacity-90 transition-opacity"
-            >
-              Submit Feedback
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
 
+const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metadata: any, file: { name: string, type: string, base64: string } | null) => void, isLoading: boolean }) => {
+  const [desc, setDesc] = useState('');
+  const [serviceCriticality, setServiceCriticality] = useState('');
+  const [rto, setRto] = useState('');
+  const [globalUserBase, setGlobalUserBase] = useState('');
+  const [trafficScale, setTrafficScale] = useState('');
+  const [trafficPattern, setTrafficPattern] = useState('');
+  const [availabilityGoal, setAvailabilityGoal] = useState('');
+  const [architectureStyle, setArchitectureStyle] = useState('');
+  const [orchestrationTool, setOrchestrationTool] = useState('');
+  const [isIaC, setIsIaC] = useState(false);
+  const [isImmutable, setIsImmutable] = useState(false);
+  const [isCentralizedLogging, setIsCentralizedLogging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<{ name: string, type: string, base64: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const processFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result?.toString().split(',')[1];
+      if (base64) setSelectedFile({ name: file.name, type: file.type, base64 });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAnalyzeClick = () => {
+    const metadata = {
+      serviceCriticality, rto, globalUserBase,
+      trafficScale, trafficPattern, availabilityGoal,
+      architectureStyle, orchestrationTool,
+      isIaC, isImmutable, isCentralizedLogging
+    };
+    onAnalyze(desc, metadata, selectedFile);
+  };
+
+  return (
+    <div className="space-y-10">
+      <PageHeader step="Step 01" title="Architecture Register" description="Provide your AWS infrastructure diagram and define your operational goals for a rigorous QA audit." />
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 space-y-6">
+          <div className="glass-panel p-8 rounded-xl border border-outline-variant/30 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-headline font-bold text-xl text-on-surface">Register Architecture Diagram</h3>
+            </div>
+            
+            <div 
+              className={cn("border-2 border-dashed rounded-xl p-10 text-center transition-all duration-300 relative overflow-hidden group", isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-outline-variant/50 hover:border-primary/50 hover:bg-surface-container-lowest", selectedFile ? "bg-surface-container-lowest" : "")}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleFileDrop}
+            >
+              <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleFileSelect} accept="image/*" />
+              
+              {selectedFile ? (
+                <div className="flex flex-col items-center gap-4 animate-fadeIn h-full w-full justify-center">
+                  <div className="relative w-full max-w-[200px] aspect-video rounded-lg overflow-hidden border-2 border-primary/20 shadow-md group-hover:scale-[1.02] transition-transform">
+                    <img 
+                      src={`data:${selectedFile.type};base64,${selectedFile.base64}`} 
+                      alt="Architecture Preview" 
+                      className="w-full h-full object-contain bg-white"
+                    />
+                    <div className="absolute inset-0 bg-primary/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <CheckCircle2 className="w-10 h-10 text-primary drop-shadow-md" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-bold text-on-surface truncate max-w-[250px]">{selectedFile.name}</p>
+                    <p className="text-xs text-on-surface-variant mt-1">Ready for analysis</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center text-on-surface-variant group-hover:text-primary group-hover:bg-primary/10 transition-all duration-300">
+                    <CloudUpload className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-on-surface mb-1">Drag & drop your AWS diagram here</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="glass-panel p-8 rounded-xl border border-outline-variant/30 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <h3 className="font-headline font-bold text-xl text-on-surface mb-2">Additional Description</h3>
+            <textarea
+              rows={4}
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="e.g. 'This architecture uses EKS for microservices and Aurora PostgreSQL. Route53 is used for DNS but not shown...'"
+              className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-4 text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none shadow-inner"
+            />
+          </div>
+        </div>
+
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/30 shadow-lg">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-outline-variant/20">
+              <Settings className="w-5 h-5 text-primary" />
+              <h3 className="font-headline font-bold text-lg text-on-surface">Operational Goals <span className="text-sm text-on-surface-variant font-normal">(Optional)</span></h3>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">Business Requirements</h4>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-on-surface-variant">Service Criticality</label>
+                  <select value={serviceCriticality} onChange={(e) => setServiceCriticality(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                    <option value="">None (Not Specified)</option>\n                    <option value="Tier 1 (Mission Critical)">Tier 1 (Mission Critical)</option>
+                    <option value="Tier 2 (Business Critical)">Tier 2 (Business Critical)</option>
+                    <option value="Tier 3 (Internal/Non-critical)">Tier 3 (Internal/Non-critical)</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-on-surface-variant">Global User Base</label>
+                  <select value={globalUserBase} onChange={(e) => setGlobalUserBase(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                    <option value="">None (Not Specified)</option>\n                    <option value="Domestic Only">Domestic Only</option>
+                    <option value="Specific Regions">Specific Regions</option>
+                    <option value="Global Service">Global Service</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-on-surface-variant">Target RTO</label>
+                  <select value={rto} onChange={(e) => setRto(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                    <option value="">None (Not Specified)</option>\n                    <option value="Within 1 hour">Within 1 hour</option>
+                    <option value="Within 4 hours">Within 4 hours</option>
+                    <option value="Within 24 hours">Within 24 hours</option>
+                    <option value="Best Effort">Best Effort</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-outline-variant/20">
+                <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">Traffic & Scalability</h4>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-on-surface-variant">Traffic Scale</label>
+                  <select value={trafficScale} onChange={(e) => setTrafficScale(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                    <option value="">None (Not Specified)</option>\n                    <option value="Low (&lt; 1K)">Low (&lt; 1K)</option>
+                    <option value="Medium (1K ~ 10K)">Medium (1K ~ 10K)</option>
+                    <option value="High (10K ~ 100K)">High (10K ~ 100K)</option>
+                    <option value="Massive (&gt; 100K)">Massive (&gt; 100K)</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-on-surface-variant">Traffic Pattern</label>
+                  <select value={trafficPattern} onChange={(e) => setTrafficPattern(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                    <option value="">None (Not Specified)</option>\n                    <option value="Steady (No Spikes)">Steady (No Spikes)</option>
+                    <option value="Predictable Spikes">Predictable Spikes</option>
+                    <option value="Unpredictable Spikes">Unpredictable Spikes</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-on-surface-variant">Availability (SLA) Goal</label>
+                  <select value={availabilityGoal} onChange={(e) => setAvailabilityGoal(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                    <option value="">None (Not Specified)</option>\n                    <option value="99.0%">99.0%</option>
+                    <option value="99.9% (Single AZ)">99.9% (Single AZ)</option>
+                    <option value="99.99% (Multi-AZ)">99.99% (Multi-AZ)</option>
+                    <option value="99.999% (Multi-Region)">99.999% (Multi-Region)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-outline-variant/20">
+                <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">Architecture Standards</h4>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-on-surface-variant">Architecture Style</label>
+                  <select value={architectureStyle} onChange={(e) => setArchitectureStyle(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                    <option value="">None (Not Specified)</option>\n                    <option value="Monolithic">Monolithic</option>
+                    <option value="Service Oriented (SOA)">Service Oriented (SOA)</option>
+                    <option value="Microservices (MSA)">Microservices (MSA)</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-on-surface-variant">Orchestration Platform</label>
+                  <select value={orchestrationTool} onChange={(e) => setOrchestrationTool(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                    <option value="">None (Not Specified)</option>\n                    <option value="None (EC2/VM Based)">None (EC2/VM Based)</option>
+                    <option value="Managed Kubernetes (EKS/GKE)">Managed Kubernetes (EKS/GKE)</option>
+                    <option value="Serverless Containers (Fargate/Cloud Run)">Serverless Containers (Fargate/Cloud Run)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-outline-variant/20">
+                <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">Operational Policies</h4>
+                <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
+                  <input type="checkbox" checked={isIaC} onChange={(e) => setIsIaC(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
+                  IaC Applied
+                </label>
+                <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
+                  <input type="checkbox" checked={isImmutable} onChange={(e) => setIsImmutable(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
+                  Immutable Infrastructure
+                </label>
+                <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
+                  <input type="checkbox" checked={isCentralizedLogging} onChange={(e) => setIsCentralizedLogging(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
+                  Centralized Logging
+                </label>
+              </div>
+
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end">
+            <button
+              onClick={handleAnalyzeClick}
+              disabled={isLoading || (!desc.trim() && !selectedFile)}
+              className={cn("bg-gradient-to-r from-primary to-primary-container text-on-primary px-12 py-5 rounded-md font-bold text-lg shadow-xl w-full flex justify-center", (isLoading || (!desc.trim() && !selectedFile)) && "opacity-50 cursor-not-allowed")}
+            >
+              {isLoading ? "Analyzing..." : "Analyze Architecture"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MappingPage = ({ mappings, onConfirm, awaitingApproval, isLoading }: { mappings: MappingItem[], onConfirm: () => void, awaitingApproval: boolean, isLoading: boolean }) => {
   return (
     <div className="space-y-10">
-      <PageHeader
-        step="Step 03"
-        title="Service Mapping"
-        description="Automated translation of source infrastructure into target-native cloud services."
-      />
-
+      <PageHeader step="Step 03" title="Service Mapping" description="Automated translation of source infrastructure into target-native cloud services." />
       {awaitingApproval && (
         <ApprovalPanel
           title="Mapping Complete - Awaiting Approval"
@@ -516,7 +437,6 @@ const MappingPage = ({ mappings, onConfirm, awaitingApproval, isLoading }: { map
           isLoading={isLoading}
         />
       )}
-
       <div className="grid grid-cols-12 gap-8 mb-4">
         <div className="col-span-5 text-on-surface-variant font-mono text-[10px] uppercase tracking-[0.2em]">Source Identity (AWS)</div>
         <div className="col-span-2"></div>
@@ -525,7 +445,7 @@ const MappingPage = ({ mappings, onConfirm, awaitingApproval, isLoading }: { map
 
       <div className="space-y-6">
         {mappings.length === 0 ? (
-          <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No mappings generated yet. Please trigger 'Analyze Architecture' from the upload tab.</p>
+          <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No mappings generated yet.</p>
         ) : (
           mappings.map((item, i) => (
             <div key={i} className="grid grid-cols-12 items-center">
@@ -576,17 +496,12 @@ const MappingPage = ({ mappings, onConfirm, awaitingApproval, isLoading }: { map
   );
 };
 
-
 const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onFeedback, isLoading, setLoadingMsg }: { report: string, checklistItems: VerificationItem[], awaitingApproval: boolean, onConfirm: () => void, onFeedback: (text: string) => void, isLoading: boolean, setLoadingMsg: (msg: string) => void }) => {
   const [activeTab, setActiveTab] = useState<'report' | 'checklist'>('report');
 
   return (
     <div className="space-y-10">
-      <PageHeader
-        step="Step 01"
-        title="Analysis Report & Quality Audit"
-        description="Detailed architecture audit, breakdown, and validation checklist."
-      />
+      <PageHeader step="Step 01" title="Analysis Report & Quality Audit" description="Detailed architecture audit, breakdown, and validation checklist." />
 
       {awaitingApproval && (
         <ApprovalPanel
@@ -609,25 +524,11 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
         <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No detailed analysis report generated yet.</p>
       ) : (
         <div className="bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/10 relative flex flex-col overflow-hidden">
-          
-          {/* Tabs Header */}
           <div className="flex border-b border-outline-variant/20 bg-surface-container-low px-6 pt-4 shrink-0">
-            <button
-              onClick={() => setActiveTab('report')}
-              className={cn(
-                "px-6 py-3 font-bold text-sm border-b-2 transition-colors",
-                activeTab === 'report' ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"
-              )}
-            >
+            <button onClick={() => setActiveTab('report')} className={cn("px-6 py-3 font-bold text-sm border-b-2 transition-colors", activeTab === 'report' ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface")}>
               Analysis Report
             </button>
-            <button
-              onClick={() => setActiveTab('checklist')}
-              className={cn(
-                "px-6 py-3 font-bold text-sm border-b-2 transition-colors flex items-center gap-2",
-                activeTab === 'checklist' ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"
-              )}
-            >
+            <button onClick={() => setActiveTab('checklist')} className={cn("px-6 py-3 font-bold text-sm border-b-2 transition-colors flex items-center gap-2", activeTab === 'checklist' ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface")}>
               Quality Audit Checklist
               {checklistItems && checklistItems.length > 0 && (
                 <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full">{checklistItems.length}</span>
@@ -635,7 +536,6 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
             </button>
           </div>
 
-          {/* Tabs Content */}
           <div className="p-8 flex-1 overflow-auto max-h-[800px]">
             {activeTab === 'report' && (
               <div className="text-on-surface">
@@ -669,9 +569,7 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
                             </pre>
                           </div>
                         ) : (
-                          <code className="bg-surface-container-low text-primary px-1.5 py-0.5 rounded text-sm font-mono border border-primary/10" {...props}>
-                            {children}
-                          </code>
+                          <code className="bg-surface-container-low text-primary px-1.5 py-0.5 rounded text-sm font-mono border border-primary/10" {...props}>{children}</code>
                         )
                       }
                     }}
@@ -690,28 +588,16 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
                   <p className="text-center text-on-surface-variant italic py-8">No checklist items generated.</p>
                 ) : (
                   checklistItems.map((item) => (
-                    <div key={item.id} className={cn(
-                      "group transition-all duration-300 p-6 flex items-start gap-6 rounded-xl relative overflow-hidden border shadow-[0_1px_2px_rgba(0,0,0,0.02)]",
-                      item.status === 'complete' ? "bg-emerald-50/20 border-emerald-200/50 hover:bg-emerald-50/40" :
-                        item.status === 'warning' ? "bg-amber-50/20 border-amber-200/50 hover:bg-amber-50/40" :
-                          "bg-slate-50/40 border-slate-200/60 hover:bg-slate-50/60"
-                    )}>
-                      <div className={cn(
-                        "w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-lg shadow-sm mt-1",
-                        item.status === 'complete' ? "bg-white text-emerald-600 border border-emerald-100" :
-                          item.status === 'warning' ? "bg-white text-amber-600 border border-amber-100" :
-                            "bg-white text-slate-500 border border-slate-100"
-                      )}>
+                    <div key={item.id} className={cn("group transition-all duration-300 p-6 flex items-start gap-6 rounded-xl relative overflow-hidden border shadow-[0_1px_2px_rgba(0,0,0,0.02)]", item.status === 'complete' ? "bg-emerald-50/20 border-emerald-200/50 hover:bg-emerald-50/40" : item.status === 'warning' ? "bg-amber-50/20 border-amber-200/50 hover:bg-amber-50/40" : "bg-slate-50/40 border-slate-200/60 hover:bg-slate-50/60")}>
+                      <div className={cn("w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-lg shadow-sm mt-1", item.status === 'complete' ? "bg-white text-emerald-600 border border-emerald-100" : item.status === 'warning' ? "bg-white text-amber-600 border border-amber-100" : "bg-white text-slate-500 border border-slate-100")}>
                         {item.status === 'complete' ? <CheckCircle2 className="w-6 h-6" /> : item.status === 'warning' ? <AlertTriangle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
                       </div>
-
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
                           <span className="text-[10px] font-mono font-bold text-on-surface-variant opacity-60">ID: {item.id}</span>
                         </div>
                         <h5 className="font-headline font-bold text-on-surface text-base">{item.title}</h5>
                         <p className="text-sm text-on-surface-variant">{item.description}</p>
-
                         <div className="flex items-center gap-1 mt-3 text-[11px] font-bold tracking-tight">
                           {item.status === 'complete' ? (
                             <span className="text-emerald-700 flex items-center gap-1">✅ Verified & Approved — Ready for deployment.</span>
@@ -722,12 +608,8 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
                           )}
                         </div>
                       </div>
-
                       <div className="text-right">
-                        <span className={cn(
-                          "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm",
-                          item.status === 'complete' ? "bg-emerald-100/80 text-emerald-800" : item.status === 'warning' ? "bg-amber-100/80 text-amber-800" : "bg-slate-100/80 text-slate-700"
-                        )}>
+                        <span className={cn("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm", item.status === 'complete' ? "bg-emerald-100/80 text-emerald-800" : item.status === 'warning' ? "bg-amber-100/80 text-amber-800" : "bg-slate-100/80 text-slate-700")}>
                           {item.status === 'complete' ? 'Passed' : item.status === 'warning' ? 'Warning' : 'Pending'}
                         </span>
                       </div>
@@ -750,19 +632,18 @@ const TerraformPage = ({ files }: { files: { [filename: string]: string } }) => 
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(code);
-    alert("Code copied to clipboard!");
   };
 
-  const handleExportZip = async () => {
+  const handleDownloadZip = async () => {
     const zip = new JSZip();
-    Object.keys(files).forEach((name) => {
-      zip.file(name, files[name]);
+    Object.entries(files).forEach(([name, content]) => {
+      zip.file(name, content);
     });
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'terraform_blueprint.zip';
+    link.download = 'terraform-infra.zip';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -770,52 +651,46 @@ const TerraformPage = ({ files }: { files: { [filename: string]: string } }) => 
   };
 
   return (
-    <div className="flex flex-col h-full gap-y-6">
-      <PageHeader
-        step="Step 04"
-        title="Terraform Output"
-        description="Automated infrastructure generation from source mapping."
-        rightElement={fileNames.length > 0 ? (
-          <div className="flex gap-x-3">
-            <button
-              onClick={handleCopyCode}
-              className="bg-surface-container-lowest text-on-surface px-4 py-2 rounded-md font-semibold text-sm flex items-center gap-x-2 border border-outline-variant/10 hover:bg-surface-container transition-all active:scale-95"
-            >
-              <Copy className="w-4 h-4" />
-              <span>Copy Code</span>
-            </button>
-            <button
-              onClick={handleExportZip}
-              className="bg-surface-container-lowest text-on-surface px-4 py-2 rounded-md font-semibold text-sm flex items-center gap-x-2 border border-outline-variant/10 hover:bg-surface-container transition-all active:scale-95"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export .zip</span>
-            </button>
-          </div>
-        ) : null}
-      />
+    <div className="space-y-10">
+      <PageHeader step="Step 04" title="Terraform Output" description="Production-ready IaC (Infrastructure as Code) templates based on verified targets." rightElement={(
+        <div className="flex gap-2">
+          <button onClick={handleDownloadZip} className="bg-surface text-primary border border-primary/20 px-4 py-2 rounded-md font-bold text-xs hover:bg-primary/5 transition-all flex items-center gap-2 shadow-sm">
+            <Download className="w-4 h-4" /> Download ZIP
+          </button>
+        </div>
+      )} />
 
       {fileNames.length === 0 ? (
-        <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No Terraform code generated yet.</p>
+        <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No Terraform code generated yet. Please complete the mapping phase.</p>
       ) : (
-        <div className="flex-grow flex gap-x-12 min-h-0">
-          <div className="flex-grow flex flex-col bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.06)] border border-outline-variant/15 overflow-hidden">
-            <div className="flex bg-surface-container-low px-4 pt-3 gap-x-1 overflow-x-auto">
-              {fileNames.map((name) => (
-                <div
+        <div className="bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/20 overflow-hidden flex h-[600px]">
+          <div className="w-[240px] bg-surface-container-low border-r border-outline-variant/20 flex flex-col">
+            <div className="p-4 border-b border-outline-variant/10">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
+                <FileText className="w-3 h-3" /> Project Files
+              </h3>
+            </div>
+            <div className="flex-1 overflow-y-auto py-2">
+              {fileNames.map(name => (
+                <button
                   key={name}
                   onClick={() => setActiveTab(name)}
-                  className={cn(
-                    "px-6 py-2 rounded-t-lg text-xs font-semibold flex items-center gap-x-2 cursor-pointer transition-all",
-                    activeTab === name
-                      ? "bg-surface-container-lowest text-primary border-b-2 border-primary"
-                      : "text-on-surface-variant hover:bg-surface-container"
-                  )}
+                  className={cn("w-full text-left px-4 py-2 text-sm font-mono transition-colors border-l-2", activeTab === name ? "bg-primary/10 text-primary border-primary font-bold" : "text-on-surface-variant border-transparent hover:bg-surface-container hover:text-on-surface")}
                 >
-                  <FileText className="w-4 h-4" />
                   {name}
-                </div>
+                </button>
               ))}
+            </div>
+          </div>
+          
+          <div className="flex-1 flex flex-col min-w-0 bg-[#ffffff]">
+            <div className="h-12 border-b border-outline-variant/10 bg-surface flex items-center justify-between px-4">
+              <div className="flex items-center gap-2 text-sm font-mono font-bold text-on-surface">
+                <Code className="w-4 h-4 text-primary" /> {activeTab}
+              </div>
+              <button onClick={handleCopyCode} className="text-on-surface-variant hover:text-primary transition-colors p-1.5 rounded hover:bg-surface-container" title="Copy code">
+                <Copy className="w-4 h-4" />
+              </button>
             </div>
             <div className="flex-grow overflow-auto font-mono text-sm bg-[#ffffff] py-4">
               {code.split("\n").map((line, i) => (
@@ -827,30 +702,12 @@ const TerraformPage = ({ files }: { files: { [filename: string]: string } }) => 
                 </div>
               ))}
             </div>
-
-            <div className="bg-surface-container-low px-6 py-2 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-              <div className="flex items-center gap-x-6">
-                <div className="flex items-center gap-x-2 text-primary">
-                  <CheckCircle2 className="w-3 h-3 fill-primary" />
-                  Validated Syntax
-                </div>
-                <div>UTF-8</div>
-              </div>
-              <div className="flex items-center gap-x-6">
-                <div>Spaces: 2</div>
-                <div>Ln 12, Col 4</div>
-                <div className="text-tertiary">Terraform HCL</div>
-              </div>
-            </div>
           </div>
-          {/* 우측 사이드바 제거됨 */}
         </div>
       )}
     </div>
   );
 };
-
-// --- Main App ---
 
 export default function App() {
   const [activePage, setActivePage] = useState<Page>('upload');
@@ -863,27 +720,33 @@ export default function App() {
   const [awaitingApproval, setAwaitingApproval] = useState<boolean>(false);
   const [loadingMsg, setLoadingMsg] = useState<string>("Analyzing architecture...");
 
-  const handleRunAgent = async (promptText: string, metadata?: any, file?: { type: string, base64: string } | null) => {
+  const handleRunAgent = async (promptText: string, metadata?: any, file?: { type: string, base64: string } | null, targetAgent: string = "aws_analyzer") => {
     setIsLoading(true);
 
-    // 1. 사용자 메시지 버블 추가
     const userMsg: ChatMessage = { role: 'user', text: promptText };
     setMessages(prev => [...prev, userMsg]);
 
     let finalPrompt = promptText;
     if (metadata) {
-      finalPrompt += `\n\n[📋 Infrastructure Operational Goals]\n- Recovery Time Objective (RTO): ${metadata.rto}\n- Availability (SLA) Goal: ${metadata.availability}\n- Estimated Traffic Scale: ${metadata.traffic}`;
-      finalPrompt += `\n- Monitoring/Logging: Centralized logging and monitoring ${metadata.isMonitoring ? 'Enabled' : 'Disabled'}`;
-      finalPrompt += `\n- Architecture Style: Microservices (MSA) style ${metadata.isMsa ? 'Enabled' : 'Disabled'}`;
+      finalPrompt += `\n\n[📋 Target Business & Operational Goals for QA Audit]\n`;
+      finalPrompt += `- Service Criticality: ${metadata.serviceCriticality}\n`;
+      finalPrompt += `- Target RTO: ${metadata.rto}\n`;
+      finalPrompt += `- Global User Base: ${metadata.globalUserBase}\n`;
+      finalPrompt += `- Expected Traffic Scale: ${metadata.trafficScale}\n`;
+      finalPrompt += `- Traffic Pattern: ${metadata.trafficPattern}\n`;
+      finalPrompt += `- Availability (SLA) Goal: ${metadata.availabilityGoal}\n`;
+      finalPrompt += `- Architecture Style: ${metadata.architectureStyle}\n`;
+      finalPrompt += `- Orchestration Platform: ${metadata.orchestrationTool}\n`;
+      finalPrompt += `- Infrastructure as Code (IaC) Applied: ${metadata.isIaC ? 'Yes' : 'No'}\n`;
+      finalPrompt += `- Immutable Infrastructure (No direct admin access): ${metadata.isImmutable ? 'Yes' : 'No'}\n`;
+      finalPrompt += `- Centralized Logging & Monitoring: ${metadata.isCentralizedLogging ? 'Yes' : 'No'}\n`;
+      finalPrompt += `\n(Agent Instruction: You MUST rigorously evaluate the attached architecture against the 34 Quality Audit Checklist items based on these stated goals.)`;
     }
 
     const parts: any[] = [{ text: finalPrompt }];
     if (file) {
       parts.push({
-        inlineData: {
-          mimeType: file.type,
-          data: file.base64
-        }
+        inlineData: { mimeType: file.type, data: file.base64 }
       });
     }
 
@@ -891,160 +754,127 @@ export default function App() {
       const res = await fetch("/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          appName: "agent",
-          userId: "cloud_arch_user",
-          sessionId: "main_session_01",
-          newMessage: {
-            role: "user",
-            parts: parts
-          }
-        })
+        body: JSON.stringify({ appName: targetAgent, userId: "cloud_arch_user", sessionId: "main_session_01", newMessage: { role: "user", parts: parts } })
       });
 
-      if (!res.ok) {
-        throw new Error(`Backend Server Error (${res.status}): AI model is overloaded or internal processing failed. Please try again soon.`);
-      }
+      if (!res.ok) throw new Error(`Backend Server Error (${res.status})`);
 
       const data = await res.json();
 
       if (Array.isArray(data)) {
         let fullText = "";
-        // 🛡️ [수정] 모든 응답 파트를 순회하며 누적 합산하여 상세 리포트 유실을 원천 차단합니다.
-        data.forEach(event => {
+        let bestText = "";
+        data.forEach((event: any) => {
           if (event?.content?.parts) {
+            let eventText = "";
             event.content.parts.forEach((part: any) => {
-              if (part.text) fullText += part.text + "\n";
+              if (part.text && !part.functionCall) eventText += part.text + "\n";
             });
+            if (eventText.includes("### 📊") && eventText.includes("```json")) {
+              bestText = eventText;
+            } else if (!bestText && eventText.trim().length > 0) {
+              fullText += eventText + "\n";
+            }
           }
         });
+        
+        if (bestText) fullText = bestText;
 
         if (fullText) {
-          // 시스템 승인 플래그 인지 및 텍스트 세척
-          const isAwaiting = fullText.includes("[AWAITING_USER_APPROVAL]");
+          setAwaitingApproval(true);
           const cleanText = fullText.replace("[AWAITING_USER_APPROVAL]", "").trim();
 
-          // 2. 에이전트 메시지 버블 추가
-          const agentMsg: ChatMessage = { role: 'agent', text: cleanText };
-          setMessages(prev => [...prev, agentMsg]);
+          setMessages(prev => [...prev, { role: 'agent', text: cleanText }]);
 
           let navigated = false;
           let hasChecklistData = false;
-          let isMappingOrCode = false;
 
-          // 1. JSON Data Extraction for visual tabs
           if (fullText.includes("```json")) {
             const blocks = fullText.split("```json");
             for (let i = 1; i < blocks.length; i++) {
               let jsonStr = "";
               try {
                 jsonStr = blocks[i].split("```")[0];
-
-                // 🛡️ JSON 블록 후미에 HALLUCINATION/인증 태그 사족(예: [AWAITING...])이 붙는 예외 방어
                 const lastBraceIndex = jsonStr.lastIndexOf("}");
-                if (lastBraceIndex !== -1) {
-                  jsonStr = jsonStr.substring(0, lastBraceIndex + 1);
-                }
+                if (lastBraceIndex !== -1) jsonStr = jsonStr.substring(0, lastBraceIndex + 1);
 
                 const cleanedJson = jsonStr.replace(/,\s*([\]}])/g, "$1");
                 const parsed = JSON.parse(cleanedJson);
 
                 const checklistData = parsed.checklist || parsed.checklist_results;
                 if (checklistData && Array.isArray(checklistData)) {
-                  // 🛡️ [수정] 중첩 구조(category/items)와 평탄한 구조(flat list)를 모두 지원하도록 파싱 로직 강화
                   const flatChecklist = checklistData.flatMap((node: any) => {
                     if (node.items && Array.isArray(node.items)) {
-                      // 중첩 구조인 경우
                       return node.items.map((item: any) => ({
                         id: item.id || item.check || Math.random().toString(),
                         title: item.check || item.title || "N/A",
                         description: item.details || item.description || item.note || "",
-                        status: (item.status?.toLowerCase() === 'warning' || item.status?.toLowerCase() === 'error') ? 'warning' : 
+                        status: (item.status?.toLowerCase() === 'warning' || item.status?.toLowerCase() === 'error' || item.status?.toLowerCase() === 'fail') ? 'warning' : 
                                 (item.status?.toLowerCase() === 'complete' || item.status?.toLowerCase() === 'passed' || item.status?.toLowerCase() === 'pass') ? 'complete' : 'pending'
                       }));
                     } else {
-                      // 평탄한 리스트인 경우
                       return [{
                         id: node.id || node.check || node.title || Math.random().toString(),
                         title: node.check || node.title || "N/A",
                         description: node.details || node.description || node.note || "",
-                        status: (node.status?.toLowerCase() === 'warning' || node.status?.toLowerCase() === 'error') ? 'warning' : 
+                        status: (node.status?.toLowerCase() === 'warning' || node.status?.toLowerCase() === 'error' || node.status?.toLowerCase() === 'fail') ? 'warning' : 
                                 (node.status?.toLowerCase() === 'complete' || node.status?.toLowerCase() === 'passed' || node.status?.toLowerCase() === 'pass') ? 'complete' : 'pending'
                       }];
                     }
                   });
-
                   setChecklist(flatChecklist);
                   hasChecklistData = flatChecklist.length > 0;
-                  // 🛡️ [수정] 즉시 페이지 이동 대신 데이터만 저장합니다. 이동은 하단 리포트 체크 로직에서 통합 제어합니다.
                 }
 
                 const mappingData = parsed.mappings || parsed.mappings_results;
                 if (mappingData) {
                   setMappings(mappingData);
-                  setActivePage('mapping'); // 매핑은 별도의 명확한 단계이므로 유지
+                  setActivePage('mapping'); 
                   navigated = true;
-                  isMappingOrCode = true;
                 }
               } catch (e) {
-                console.error("⚠️ [App.tsx] JSON 파싱 실패 (원본):", jsonStr, e);
+                console.error("⚠️ JSON Parse Error:", e);
               }
             }
           }
 
-          // 🛡️ [수정] 4단계 워크플로우에 맞춘 네비게이션
-          if (cleanText.includes("### 📊") || cleanText.includes("### 🌐")) {
-            // Step 1: 분석 결과 도착
-            setAnalysisReport(cleanText);
-            setActivePage('analysis');
-            navigated = true;
-          } else if (hasChecklistData) {
-            // Step 2: 체크리스트 데이터 도착
-            // AnalysisPage 내부의 Checklist 탭에서 볼 수 있도록 설정
-            setActivePage('analysis'); 
-            navigated = true;
-          }
-
-          // 2. Terraform HCL Extraction
           const files: { [key: string]: string } = {};
           const segments = fullText.split("### ");
           for (let i = 1; i < segments.length; i++) {
             const segment = segments[i];
             const lines = segment.split("\n");
-            const filename = lines[0].trim().replace("[", "").replace("]", "");
+            let filename = lines[0].trim().replace("[", "").replace("]", "");
+            if (!filename.includes(".tf")) filename = filename + ".tf"; 
+            
             if (segment.includes("```hcl")) {
-              const code = segment.split("```hcl")[1].split("```")[0];
-              files[filename] = code;
-              isMappingOrCode = true;
+              files[filename] = segment.split("```hcl")[1].split("```")[0];
             } else if (segment.includes("```terraform")) {
-              const code = segment.split("```terraform")[1].split("```")[0];
-              files[filename] = code;
-              isMappingOrCode = true;
+              files[filename] = segment.split("```terraform")[1].split("```")[0];
             }
           }
+
+          if (Object.keys(files).length === 0) {
+              const codeBlockRegex = /```(?:hcl|terraform)\n([\s\S]*?)```/g;
+              let match;
+              let fileIndex = 1;
+              while ((match = codeBlockRegex.exec(fullText)) !== null) {
+                  files[`main_${fileIndex}.tf`] = match[1].trim();
+                  fileIndex++;
+              }
+          }
+
           if (Object.keys(files).length > 0) {
             setTerraformFiles(files);
             setActivePage('terraform');
             navigated = true;
-          } else if (fullText.includes("```hcl")) {
-            const codeStr = fullText.split("```hcl")[1].split("```")[0];
-            setTerraformFiles({ "main.tf": codeStr });
-            setActivePage('terraform');
-            navigated = true;
-          } else if (fullText.includes("```terraform")) {
-            const codeStr = fullText.split("```terraform")[1].split("```")[0];
-            setTerraformFiles({ "main.tf": codeStr });
-            setActivePage('terraform');
-            navigated = true;
           }
 
-          // 3. Fallback to Analysis (매핑이나 코드가 없고, 리포트 헤더가 포함된 경우에만 분석 페이지로 이동)
-          if (!navigated && (cleanText.includes("### 📊") || cleanText.includes("### 🌐"))) {
+          if (!navigated && (cleanText.includes("### 📊") || cleanText.includes("### 🌐") || hasChecklistData)) {
+            // let displayReport = cleanText;
+            // 🛡️ [수정] JSON 블록도 화면에 보이도록 자르기 로직(substring)을 제거했습니다.
+            setAnalysisReport(cleanText);
             setActivePage('analysis');
           }
-
-          // 3. Approval Check (HITL)
-          setAwaitingApproval(isAwaiting);
         }
       }
     } catch (e: any) {
@@ -1056,35 +886,31 @@ export default function App() {
   return (
     <div className="flex min-h-screen">
       <Sidebar activePage={activePage} onPageChange={setActivePage} />
-
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <TopBar />
-
         <div className="flex-1 overflow-y-auto blueprint-grid">
           <div className="p-12 max-w-7xl w-full mx-auto">
             <AnimatePresence mode="wait">
-              <motion.div
-                key={activePage}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-              >
-                {activePage === 'upload' && (
-                  <UploadPage onAnalyze={(d, m, f) => {
-                    setLoadingMsg("🔍 Analyzing generated infrastructure architecture...");
-                    handleRunAgent(d, m, f);
-                  }} isLoading={isLoading} />
-                )}
-                {activePage === 'analysis' && <AnalysisPage report={analysisReport} checklistItems={checklist} awaitingApproval={awaitingApproval} onConfirm={() => handleRunAgent("APPROVE_ANALYSIS")} onFeedback={(text) => handleRunAgent(text)} isLoading={isLoading} setLoadingMsg={setLoadingMsg} />}
-                {activePage === 'mapping' && (
-                  <MappingPage mappings={mappings} onConfirm={() => handleRunAgent("APPROVE_MAPPING")} awaitingApproval={awaitingApproval} isLoading={isLoading} />
-                )}
-                                {activePage === 'terraform' && <TerraformPage files={terraformFiles} />}
+              <motion.div key={activePage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }}>
+                {activePage === 'upload' && <UploadPage onAnalyze={(d, m, f) => { setLoadingMsg("🔍 Analyzing AWS infrastructure architecture..."); handleRunAgent(d, m, f, "aws_analyzer"); }} isLoading={isLoading} />}
+                {activePage === 'analysis' && <AnalysisPage report={analysisReport} checklistItems={checklist} awaitingApproval={awaitingApproval} onConfirm={() => {
+                  try {
+                    const safeChecklist = Array.isArray(checklist) ? JSON.stringify(checklist) : "[]";
+                    handleRunAgent(`다음 AWS 아키텍처 분석 결과를 바탕으로 GCP 리소스로 매핑(번역)해 주세요.\n\n${analysisReport}\n\n${safeChecklist}`, null, null, "translator");
+                  } catch (e) {
+                    handleRunAgent(`다음 AWS 아키텍처 분석 결과를 바탕으로 GCP 리소스로 매핑(번역)해 주세요.\n\n${analysisReport}`, null, null, "translator");
+                  }
+                }} onFeedback={(text) => handleRunAgent(text, null, null, "aws_analyzer")} isLoading={isLoading} setLoadingMsg={setLoadingMsg} />}
+                {activePage === 'mapping' && <MappingPage mappings={mappings} onConfirm={() => {
+                  try {
+                    const safeMappings = Array.isArray(mappings) ? JSON.stringify(mappings) : "[]";
+                    handleRunAgent(`다음 GCP 매핑 결과를 바탕으로 Terraform 코드를 생성해 주세요.\n\n${safeMappings}`, null, null, "generator");
+                  } catch (e) {
+                  }
+                }} awaitingApproval={awaitingApproval} isLoading={isLoading} />}
+                {activePage === 'terraform' && <TerraformPage files={terraformFiles} />}
               </motion.div>
             </AnimatePresence>
-
-            {/* 🛡️ 글로벌 로딩 오버레이 화면 격상 */}
             {isLoading && (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center z-50 animate-fadeIn">
                 <div className="w-14 h-14 border-4 border-secondary border-t-transparent rounded-full animate-spin mb-4 shadow-xl"></div>
@@ -1094,7 +920,6 @@ export default function App() {
                 </div>
               </div>
             )}
-
             <footer className="mt-20 pt-10 border-t border-outline-variant/10 flex items-center justify-between text-on-surface-variant opacity-40 italic text-xs">
               <p>Vertex Cloud Protocol • Automated System Validation Session #8812-B</p>
               <p>All timestamps are UTC-0</p>
@@ -1102,8 +927,6 @@ export default function App() {
           </div>
         </div>
       </main>
-
     </div>
   );
 }
-

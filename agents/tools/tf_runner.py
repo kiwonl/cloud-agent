@@ -5,7 +5,7 @@ import tempfile
 import logging
 from google.genai import Client
 from google.genai.types import GenerateContentConfig
-from agent.generator import generator
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,10 +64,17 @@ async def run_terraform_with_self_healing(architecture_proposal: str) -> str:
     logger.info(f"Starting Terraform Generation. Attempt {current_attempt + 1}/{max_retries}")
     
     client = Client()
-    config = GenerateContentConfig(system_instruction=generator.instruction)
+    
+    # Read the instruction directly to avoid circular imports
+    instruction_path = os.path.join(os.path.dirname(__file__), '..', 'prompts', 'generator.txt')
+    with open(instruction_path, 'r', encoding='utf-8') as f:
+        sys_instruction = f.read()
+        
+    model_name = os.getenv("MODEL", "gemini-2.5-pro")
+    config = GenerateContentConfig(system_instruction=sys_instruction)
     
     response = client.models.generate_content(
-        model=generator.model,
+        model=model_name,
         contents=prompt,
         config=config,
     )
@@ -133,7 +140,7 @@ async def run_terraform_with_self_healing(architecture_proposal: str) -> str:
             correction_prompt = f"The previous Terraform code you generated resulted in the following error when running `terraform plan` or `init`:\n\n{str(e)}\n\nPlease fix the code to resolve this error. DO NOT explain, return ONLY the files list starting with '### [filename.tf]' streams conforming to the specification."
             
             response = client.models.generate_content(
-                model=generator.model,
+                model=model_name,
                 contents=correction_prompt,
                 config=config,
             )
