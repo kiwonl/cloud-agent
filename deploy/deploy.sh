@@ -23,7 +23,8 @@ fi
 
 AGENT_SERVICE_NAME="cloud-agent"
 FRONTEND_SERVICE_NAME="cloud-frontend"
-REGION="${LOCATION:-us-central1}"
+MODEL_LOCATION="${MODEL_LOCATION:-global}"
+LOCATION="${LOCATION:-us-central1}"
 MODEL="${MODEL:-gemini-2.5-pro}"
 
 SA_NAME="cloud-agent-sa"
@@ -31,7 +32,8 @@ SA_NAME="cloud-agent-sa"
 SA_EMAIL="$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"
 
 echo "PROJECT_ID: $PROJECT_ID"
-echo "REGION: $REGION"
+echo "LOCATION: $LOCATION"  
+echo "MODEL_LOCATION: $MODEL_LOCATION"
 
 echo "Checking Service Account: $SA_EMAIL"
 if ! gcloud iam service-accounts describe "$SA_EMAIL" --project "$PROJECT_ID" > /dev/null 2>&1; then
@@ -54,33 +56,29 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
 echo "Deploying Agent (Backend) $AGENT_SERVICE_NAME to Google Cloud Run..."
 gcloud run deploy $AGENT_SERVICE_NAME \
     --source "$SCRIPT_DIR/../agents" \
-    --region $REGION \
+    --region $LOCATION \
     --project $PROJECT_ID \
     --allow-unauthenticated \
-    --set-env-vars="MODEL=$MODEL,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=$REGION" \
+    --set-env-vars="MODEL=$MODEL,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=$MODEL_LOCATION" \
     --service-account="$SA_EMAIL" \
     --timeout=600 \
     --quiet
 
 
-
-
-
-
 # Retrieve the actual URL of the deployed Agent
-AGENT_URL=$(gcloud run services describe $AGENT_SERVICE_NAME --platform managed --region $REGION --project $PROJECT_ID --format 'value(status.url)')
+AGENT_URL=$(gcloud run services describe $AGENT_SERVICE_NAME --platform managed --region $LOCATION --project $PROJECT_ID --format 'value(status.url)')
 echo "Agent deployed at: $AGENT_URL"
 
 echo "Deploying Frontend $FRONTEND_SERVICE_NAME to Google Cloud Run..."
 gcloud run deploy $FRONTEND_SERVICE_NAME \
     --source "$SCRIPT_DIR/../frontend" \
-    --region $REGION \
+    --region $LOCATION \
     --project $PROJECT_ID \
     --allow-unauthenticated \
     --set-env-vars="AGENT_API_URL=$AGENT_URL" \
     --quiet
 
-FRONTEND_URL=$(gcloud run services describe $FRONTEND_SERVICE_NAME --platform managed --region $REGION --project $PROJECT_ID --format 'value(status.url)')
+FRONTEND_URL=$(gcloud run services describe $FRONTEND_SERVICE_NAME --platform managed --region $LOCATION --project $PROJECT_ID --format 'value(status.url)')
 echo "Frontend deployed at: $FRONTEND_URL"
 
 echo "Deployment complete! Access the application here: $FRONTEND_URL"
