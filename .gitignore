@@ -39,6 +39,8 @@ logs/
 *.tfstate.backup
 .env.*
 !.env.template
+ADS.md
+SRS.md
 
 # Debugging and Temporary Scripts
 orchestrator_debug_msg_exact.txt
