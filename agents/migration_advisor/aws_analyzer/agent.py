@@ -1,11 +1,9 @@
 import os
 import sys
 from google.adk import Agent
-from google.adk.tools import FunctionTool
 
 # tools 모듈을 찾기 위한 경로 추가
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from tools.tf_runner import run_terraform_with_self_healing
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from tools.callback_logging import log_query_to_model, log_model_response
 
 def load_prompt(filename):
@@ -15,11 +13,10 @@ def load_prompt(filename):
         return f.read()
 
 root_agent = Agent(
-    name="generator",
+    name="aws_analyzer",
     model=os.getenv("MODEL", "gemini-2.5-pro"),
-    description="Generates Terraform HCL code based on GCP mapping results.",
-    instruction=load_prompt("generator.txt"),
-    tools=[FunctionTool(run_terraform_with_self_healing)],
+    description="Analyzes AWS Infrastructure Architecture images or text and outputs a detailed list of AWS resources and an infrastructure quality audit.",
+    instruction=load_prompt("aws_analyzer.txt"),
     before_model_callback=log_query_to_model,
     after_model_callback=log_model_response
 )

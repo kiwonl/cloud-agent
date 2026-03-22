@@ -66,7 +66,7 @@ async def run_terraform_with_self_healing(architecture_proposal: str) -> str:
     client = Client()
     
     # Read the instruction directly to avoid circular imports
-    instruction_path = os.path.join(os.path.dirname(__file__), '..', 'prompts', 'generator.txt')
+    instruction_path = os.path.join(os.path.dirname(__file__), '..', 'prompts', 'tf_generator.txt')
     with open(instruction_path, 'r', encoding='utf-8') as f:
         sys_instruction = f.read()
         

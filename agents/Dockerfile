@@ -14,4 +14,4 @@ COPY . .
 
 # Run the ADK API Server
 # Cloud Run은 포트를 $PORT 환경 변수로 제공합니다.
-CMD ["sh", "-c", "adk api_server . --host 0.0.0.0 --port $PORT --allow_origins '*' --auto_create_session"]
+CMD ["sh", "-c", "adk api_server ./migration_advisor --host 0.0.0.0 --port $PORT --allow_origins '*' --auto_create_session"]

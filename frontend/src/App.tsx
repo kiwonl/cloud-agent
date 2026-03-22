@@ -973,9 +973,9 @@ export default function App() {
                 {activePage === 'analysis' && <AnalysisPage report={analysisReport} checklistItems={checklist} awaitingApproval={awaitingApproval} onConfirm={() => {
                   try {
                     const safeChecklist = Array.isArray(checklist) ? JSON.stringify(checklist) : "[]";
-                    handleRunAgent(`다음 AWS 아키텍처 분석 결과를 바탕으로 GCP 리소스로 매핑(번역)해 주세요.\n\n${analysisReport}\n\n${safeChecklist}`, null, null, "translator");
+                    handleRunAgent(`다음 AWS 아키텍처 분석 결과를 바탕으로 GCP 리소스로 매핑(번역)해 주세요.\n\n${analysisReport}\n\n${safeChecklist}`, null, null, "gcp_translator");
                   } catch (e) {
-                    handleRunAgent(`다음 AWS 아키텍처 분석 결과를 바탕으로 GCP 리소스로 매핑(번역)해 주세요.\n\n${analysisReport}`, null, null, "translator");
+                    handleRunAgent(`다음 AWS 아키텍처 분석 결과를 바탕으로 GCP 리소스로 매핑(번역)해 주세요.\n\n${analysisReport}`, null, null, "gcp_translator");
                   }
                 }} onFeedback={(text) => handleRunAgent(text, null, null, "aws_analyzer")} isLoading={isLoading} setLoadingMsg={setLoadingMsg} />}
                 {activePage === 'mapping' && <MappingPage mappings={mappings} report={mappingReport} onConfirm={() => {
@@ -992,7 +992,7 @@ ${mappingReport}
 --- [3. 리소스 1:1 매핑 변환표] ---
 ${safeMappings}`;
 
-                    handleRunAgent(generatorPrompt, null, null, "generator");
+                    handleRunAgent(generatorPrompt, null, null, "tf_generator");
                   } catch (e) {
                   }
                 }} awaitingApproval={awaitingApproval} isLoading={isLoading} />}

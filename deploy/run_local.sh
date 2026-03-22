@@ -32,7 +32,7 @@ echo "Starting FastAPI Backend (Port 8000)..."
 echo "======================================"
 # Start backend in background using ADK CLI
 # Point to 'agents' directory instead of '.'
-./venv/bin/adk api_server agents --port 8000 --allow_origins "*" --auto_create_session &
+./venv/bin/adk api_server agents/migration_advisor --port 8000 --allow_origins "*" --auto_create_session &
 BACKEND_PID=$!
 
 echo "======================================"

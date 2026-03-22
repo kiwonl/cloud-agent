@@ -3,7 +3,7 @@ import sys
 from google.adk import Agent
 
 # tools 모듈을 찾기 위한 경로 추가
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from tools.callback_logging import log_query_to_model, log_model_response
 
 def load_prompt(filename):
@@ -13,10 +13,10 @@ def load_prompt(filename):
         return f.read()
 
 root_agent = Agent(
-    name="aws_analyzer",
+    name="gcp_translator",
     model=os.getenv("MODEL", "gemini-2.5-pro"),
-    description="Analyzes AWS Infrastructure Architecture images or text and outputs a detailed list of AWS resources and an infrastructure quality audit.",
-    instruction=load_prompt("analyzer.txt"),
+    description="Translates an AWS infrastructure analysis report into an optimized GCP architecture mapping.",
+    instruction=load_prompt("gcp_translator.txt"),
     before_model_callback=log_query_to_model,
     after_model_callback=log_model_response
 )
