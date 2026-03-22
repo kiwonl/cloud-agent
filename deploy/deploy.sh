@@ -52,6 +52,13 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
     --condition=None \
     --quiet
 
+echo "Granting Cloud Asset Viewer role to $SA_EMAIL"
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:$SA_EMAIL" \
+    --role="roles/cloudasset.viewer" \
+    --condition=None \
+    --quiet
+
 
 echo "Deploying Agent (Backend) $AGENT_SERVICE_NAME to Google Cloud Run..."
 gcloud run deploy $AGENT_SERVICE_NAME \

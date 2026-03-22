@@ -1,4 +1,5 @@
-export type Page = 'upload' | 'analysis' | 'mapping' | 'checklist' | 'terraform';
+export type AppMode = 'migration' | 'gcp_advisor';
+export type Page = 'upload' | 'analysis' | 'mapping' | 'checklist' | 'terraform' | 'audit_setup' | 'audit_report' | 'audit_live';
 
 export interface NavItem {
   id: Page;

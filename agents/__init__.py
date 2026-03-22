@@ -1,1 +1,1 @@
-from .agent.orchestrator import root_agent
+# Empty init since agent was moved to migration_advisor

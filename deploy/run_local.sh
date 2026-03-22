@@ -30,9 +30,8 @@ lsof -ti:8000,8080 | xargs kill -9 2>/dev/null
 echo "======================================"
 echo "Starting FastAPI Backend (Port 8000)..."
 echo "======================================"
-# Start backend in background using ADK CLI
-# Point to 'agents' directory instead of '.'
-./venv/bin/adk api_server agents/migration_advisor --port 8000 --allow_origins "*" --auto_create_session &
+# Start custom Unified FastAPI Orchestrator Backend in background (serving ALL agents)
+./venv/bin/uvicorn agents.server:adk_app --port 8000 --host 0.0.0.0 &
 BACKEND_PID=$!
 
 echo "======================================"

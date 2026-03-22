@@ -15,3 +15,10 @@ env/
 *.bak
 *.swp
 .DS_Store
+.adk/
+.pytest_cache/
+tests/
+data/
+logs/
+.vscode/
+.idea/
