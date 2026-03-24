@@ -16,7 +16,7 @@ def load_prompt(filename):
 
 root_agent = Agent(
     name="tf_generator",
-    model=os.getenv("MODEL", "gemini-2.5-pro"),
+    model=os.getenv("MODEL", "gemini-3.1-pro-preview"),
     description="Generates Terraform HCL code based on GCP mapping results.",
     instruction=load_prompt("tf_generator.txt"),
     tools=[FunctionTool(run_terraform_with_self_healing)],

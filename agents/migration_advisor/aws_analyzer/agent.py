@@ -14,7 +14,7 @@ def load_prompt(filename):
 
 root_agent = Agent(
     name="aws_analyzer",
-    model=os.getenv("MODEL", "gemini-2.5-pro"),
+    model=os.getenv("MODEL", "gemini-3.1-pro-preview"),
     description="Analyzes AWS Infrastructure Architecture images or text and outputs a detailed list of AWS resources and an infrastructure quality audit.",
     instruction=load_prompt("aws_analyzer.txt"),
     before_model_callback=log_query_to_model,

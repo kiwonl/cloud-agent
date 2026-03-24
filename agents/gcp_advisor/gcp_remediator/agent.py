@@ -14,7 +14,7 @@ def load_prompt(filename):
 
 root_agent = Agent(
     name="gcp_remediator",
-    model=os.getenv("MODEL", "gemini-3.1-pro"),
+    model=os.getenv("MODEL", "gemini-3.1-pro-preview"),
     description="Acts as a Cloud Architect to provide best practices and generate Terraform/gcloud remediation code for failed infrastructure checklist items.",
     instruction=load_prompt("gcp_remediator.txt"),
     before_model_callback=log_query_to_model,

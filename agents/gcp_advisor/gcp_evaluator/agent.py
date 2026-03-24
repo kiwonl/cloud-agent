@@ -15,7 +15,7 @@ def load_prompt(filename):
 
 root_agent = Agent(
     name="gcp_evaluator",
-    model=os.getenv("MODEL", "gemini-3.1-pro"),
+    model=os.getenv("MODEL", "gemini-3.1-pro-preview"),
     description="Evaluates single checklist items against the infrastructure report. It uses strict rubrics and can invoke discovery tools if data is missing.",
     instruction=load_prompt("gcp_evaluator.txt"),
     before_model_callback=log_query_to_model,

@@ -1,22 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  --font-headline: "Space Grotesk", sans-serif;
+  --font-headline: "Inter", sans-serif;
   --font-body: "Inter", sans-serif;
 
-  --color-primary: #0058bd;
-  --color-primary-container: #2771df;
+  --color-primary: #1d4ed8;
+  --color-primary-container: #eff6ff;
   --color-on-primary: #ffffff;
-  --color-secondary: #8a5100;
-  --color-secondary-container: #fe9800;
-  --color-tertiary: #135ea2;
-  --color-background: #f8fafb;
-  --color-surface: #f8fafb;
-  --color-surface-container-low: #f2f4f5;
+  
+  --color-secondary: #0ea5e9;
+  --color-secondary-container: #e0f2fe;
+  
+  --color-tertiary: #10b981;
+  
+  --color-background: #f4f7f9;
+  --color-surface: #ffffff;
+  --color-surface-container-low: #f8fafc;
   --color-surface-container-lowest: #ffffff;
-  --color-on-surface: #191c1d;
-  --color-on-surface-variant: #1e2129;
-  --color-outline-variant: #c2c6d5;
+  
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #64748b;
+  --color-outline-variant: #e2e8f0;
 }
 
 @layer base {
@@ -27,15 +31,15 @@
 
 @layer components {
   .glass-panel {
-    @apply bg-surface-container-lowest;
+    @apply bg-surface border border-outline-variant/60 shadow-sm rounded-xl;
   }
 
   .blue-gradient-btn {
-    background: linear-gradient(135deg, #0058bd 0%, #2771df 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, #2563eb 100%);
   }
 
   .blueprint-grid {
-    background-image: radial-gradient(circle, rgba(194, 198, 213, 0.4) 1px, transparent 1px);
+    background-image: radial-gradient(circle, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
     background-size: 32px 32px;
   }
 }

@@ -30,6 +30,7 @@ import {
   Sliders,
   Share,
   Cpu,
+  Bot,
   Database,
   Globe,
   Layout,
@@ -85,39 +86,11 @@ const SharedMarkdownComponents = {
   }
 };
 
-// --- Components ---
-
-const Sidebar = ({ activePage, onPageChange, appMode, onModeChange }: { activePage: Page, onPageChange: (page: Page) => void, appMode: AppMode, onModeChange: (mode: AppMode) => void }) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [width, setWidth] = useState(280);
-  const isResizing = useRef(false);
-
-  const startResizing = (e: React.MouseEvent) => {
-    isResizing.current = true;
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', stopResizing);
-    document.body.style.userSelect = 'none'; // Prevent text selection during drag
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isResizing.current) return;
-    let newWidth = e.clientX;
-    if (newWidth < 200) newWidth = 200; // Min width constraint
-    if (newWidth > 600) newWidth = 600; // Max width constraint
-    setWidth(newWidth);
-  };
-
-  const stopResizing = () => {
-    isResizing.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', stopResizing);
-    document.body.style.userSelect = '';
-  };
-
+const TopBar = ({ activePage, onPageChange, appMode, onModeChange }: { activePage: Page, onPageChange: (page: Page) => void, appMode: AppMode, onModeChange: (mode: AppMode) => void }) => {
   const migrationItems: NavItem[] = [
-    { id: 'upload', label: 'Architecture Register', icon: 'CloudUpload' },
-    { id: 'analysis', label: 'Analysis Report', icon: 'FileText' },
-    { id: 'mapping', label: 'Service Mapping', icon: 'MapIcon' },
+    { id: 'upload', label: 'Design Capture', icon: 'CloudUpload' },
+    { id: 'analysis', label: 'AWS Audit', icon: 'FileText' },
+    { id: 'mapping', label: 'Google Cloud Mapping', icon: 'MapIcon' },
     { id: 'terraform', label: 'Terraform Output', icon: 'Code' },
   ];
 
@@ -127,167 +100,101 @@ const Sidebar = ({ activePage, onPageChange, appMode, onModeChange }: { activePa
     { id: 'audit_live', label: 'Checklist', icon: 'Zap' },
   ];
 
-  const navItems = appMode === 'migration' ? migrationItems : advisorItems;
-
-  const getIcon = (name: string) => {
-    const icons: { [key: string]: any } = { CloudUpload, MapIcon, ClipboardCheck, Code, FileText, Settings, Zap };
-    const Icon = icons[name] || HelpCircle;
-    return <Icon className="w-5 h-5" />;
-  };
+  const currentItems = appMode === 'migration' ? migrationItems : advisorItems;
 
   return (
-    <aside style={{ width: `${width}px` }} className="bg-surface border-r border-outline-variant/20 flex flex-col h-full shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10 relative transition-[width] duration-0">
-      
-      {/* Resizer Handle */}
-      <div 
-        onMouseDown={startResizing}
-        className="absolute top-0 -right-1 w-2 h-full cursor-col-resize hover:bg-primary/20 z-50 flex items-center justify-center group"
-      >
-        <div className="w-0.5 h-8 bg-outline-variant/30 group-hover:bg-primary/50 rounded-full" />
-      </div>
-
-      <div className="flex-1 py-10 px-5 space-y-10 overflow-y-auto overflow-x-hidden">
+    <header className="h-[72px] bg-[#0b1437]/95 backdrop-blur-md border-b border-blue-900/30 flex items-center justify-between px-6 shrink-0 z-50 sticky top-0 overflow-x-auto whitespace-nowrap scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="flex items-center gap-4 lg:gap-4 min-w-max">
         
-        {/* GCP ADVISOR GROUP */}
-        <div className="flex flex-col relative w-full">
-          {/* Header */}
-          <div className="mb-4">
-             <div className="flex items-center gap-3 mb-1">
-               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-tertiary/20 to-tertiary/5 flex items-center justify-center shrink-0 border border-tertiary/20 shadow-sm">
-                 <ShieldCheck className="w-4 h-4 text-tertiary drop-shadow-sm" />
-               </div>
-               <h3 className="text-[12px] font-black uppercase tracking-[0.15em] text-tertiary">GCP Advisor</h3>
-             </div>
-             <p className="text-[10px] text-on-surface-variant/80 pl-11 pr-2 leading-relaxed">Audit infrastructure and ensure architectural compliance rules</p>
+        {/* LOGO */}
+        <div className="flex items-center gap-3 pr-4 lg:pr-4 border-r border-blue-900/30 pointer-events-none select-none">
+          <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-400 shadow-lg text-white">
+             <Bot className="w-5 h-5" />
           </div>
-          
-          {/* Items */}
-          <div className="relative pl-[18px] space-y-1.5">
-            {/* Connecting vertical line */}
-            <div className="absolute left-[15px] top-2 bottom-6 w-px bg-gradient-to-b from-outline-variant/30 via-outline-variant/20 to-transparent"></div>
-            
-            {advisorItems.map((item) => (
-              <div key={item.id} className="relative group/item ml-3">
-                {/* Horizontal branch line */}
-                <div className={cn("absolute left-[-16px] top-1/2 w-4 h-[1.5px] rounded-full transition-colors duration-300", activePage === item.id ? "bg-tertiary/40" : "bg-outline-variant/30 group-hover/item:bg-tertiary/30")}></div>
+          <div className="flex flex-col items-start leading-tight">
+            <h1 className="font-headline text-lg tracking-tight text-white flex gap-1.5 items-center">
+              <span className="font-black">Google Cloud</span>
+              <span className="font-extrabold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded text-[10.5px] uppercase tracking-widest border border-blue-500/20">AI Agent</span>
+            </h1>
+          </div>
+        </div>
+
+        {/* MAIN MENU */}
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => { onModeChange('gcp_advisor'); onPageChange('audit_setup'); }}
+            className={cn("px-4 py-2 rounded-md font-bold text-sm transition-all duration-300", appMode === 'gcp_advisor' ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white")}
+          >
+            Google Cloud Advisor
+          </button>
+          <button 
+            onClick={() => { onModeChange('migration'); onPageChange('upload'); }}
+            className={cn("px-4 py-2 rounded-md font-bold text-sm transition-all duration-300", appMode === 'migration' ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white")}
+          >
+            AWS Migration
+          </button>
+        </div>
+
+        {/* DIVIDER */}
+        <div className="w-px h-6 bg-blue-900/30 hidden md:block" />
+
+        {/* SUB MENU */}
+        <nav className="flex items-center">
+          {currentItems.map((item, index) => (
+            <Fragment key={item.id}>
+              <button
+                onClick={() => onPageChange(item.id)}
+                className={cn(
+                  "relative h-[72px] px-3 lg:px-4 font-bold text-sm transition-all duration-300 flex items-center gap-2 group shrink-0",
+                  activePage === item.id 
+                    ? "text-blue-400" 
+                    : "text-slate-400 hover:text-white"
+                )}
+              >
+                {/* STEP NUMBER BADGE */}
+                <div className={cn(
+                  "w-5 h-5 rounded-full flex items-center justify-center text-[10px] border transition-all duration-300",
+                  activePage === item.id 
+                    ? "bg-blue-500 border-blue-400 text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]" 
+                    : "bg-transparent border-slate-600 text-slate-500 group-hover:border-slate-400 group-hover:text-slate-300"
+                )}>
+                  {index + 1}
+                </div>
                 
-                <button
-                  onClick={() => { onModeChange('gcp_advisor'); onPageChange(item.id); }}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-sm transition-all duration-300 relative overflow-hidden",
-                    activePage === item.id
-                      ? "bg-tertiary/10 text-tertiary ring-1 ring-tertiary/20 shadow-sm"
-                      : "text-on-surface hover:bg-surface-container-high"
-                  )}
-                >
-                  {activePage === item.id && (
-                    <motion.div layoutId="sidebar-active" className="absolute left-0 top-0 bottom-0 w-1 bg-tertiary shadow-[0_0_12px_rgba(var(--color-tertiary),0.6)]" />
-                  )}
-                  <span className={cn("transition-colors z-10", activePage === item.id ? "text-tertiary" : "text-on-surface-variant group-hover/item:text-tertiary")}>
-                    {getIcon(item.icon)}
-                  </span>
-                  <span className="tracking-wide z-10 text-[13px]">{item.label}</span>
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Separator */}
-        <div className="flex items-center justify-center w-full px-8">
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-outline-variant/20 to-transparent"></div>
-        </div>
-
-        {/* AWS MIGRATION GROUP */}
-        <div className="flex flex-col relative w-full">
-          {/* Header */}
-          <div className="mb-4">
-             <div className="flex items-center gap-3 mb-1">
-               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5 flex items-center justify-center shrink-0 border border-secondary/20 shadow-sm">
-                 <CloudUpload className="w-4 h-4 text-secondary drop-shadow-sm" />
-               </div>
-               <h3 className="text-[12px] font-black uppercase tracking-[0.15em] text-secondary">AWS Migration</h3>
-             </div>
-             <p className="text-[10px] text-on-surface-variant/80 pl-11 pr-2 leading-relaxed">Translate AWS architecture safely into GCP native definitions</p>
-          </div>
-          
-          {/* Items */}
-          <div className="relative pl-[18px] space-y-1.5">
-            {/* Connecting vertical line */}
-            <div className="absolute left-[15px] top-2 bottom-6 w-px bg-gradient-to-b from-outline-variant/30 via-outline-variant/20 to-transparent"></div>
-            
-            {migrationItems.map((item) => (
-              <div key={item.id} className="relative group/item ml-3">
-                {/* Horizontal branch line */}
-                <div className={cn("absolute left-[-16px] top-1/2 w-4 h-[1.5px] rounded-full transition-colors duration-300", activePage === item.id ? "bg-secondary/40" : "bg-outline-variant/30 group-hover/item:bg-secondary/30")}></div>
+                <span className="relative z-10">{item.label}</span>
                 
-                <button
-                  onClick={() => { onModeChange('migration'); onPageChange(item.id); }}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-sm transition-all duration-300 relative overflow-hidden",
-                    activePage === item.id
-                      ? "bg-secondary/10 text-secondary ring-1 ring-secondary/20 shadow-sm"
-                      : "text-on-surface hover:bg-surface-container-high"
-                  )}
-                >
-                  {activePage === item.id && (
-                    <motion.div layoutId="sidebar-active" className="absolute left-0 top-0 bottom-0 w-1 bg-secondary shadow-[0_0_12px_rgba(var(--color-secondary),0.6)]" />
-                  )}
-                  <span className={cn("transition-colors z-10", activePage === item.id ? "text-secondary" : "text-on-surface-variant group-hover/item:text-secondary")}>
-                    {getIcon(item.icon)}
-                  </span>
-                  <span className="tracking-wide z-10 text-[13px]">{item.label}</span>
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+                {activePage === item.id && (
+                  <motion.div 
+                    layoutId="topbar-active" 
+                    className="absolute bottom-0 left-0 right-0 h-[3px] bg-blue-500 shadow-[0_-2px_8px_rgba(59,130,246,0.6)] z-20 rounded-t-full" 
+                  />
+                )}
+                
+                {/* Subtle hover background highlight for non-active items */}
+                {activePage !== item.id && (
+                  <div className="absolute inset-x-1 inset-y-3 rounded-lg bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
+                )}
+              </button>
+              
+              {/* CONNECTING CHEVRON (Stepper Indicator) */}
+              {index < currentItems.length - 1 && (
+                <ChevronRight className="w-4 h-4 text-slate-700 shrink-0 mx-0.5" />
+              )}
+            </Fragment>
+          ))}
+        </nav>
+      </div>
 
-      </div>
-    </aside>
-  );
-};
-
-const TopBar = () => {
-  return (
-    <header className="h-20 bg-surface-container-lowest border-b border-outline-variant/20 flex items-center justify-between px-8 shrink-0 z-0 shadow-sm relative z-20">
-      <div className="flex-1 flex items-center gap-4">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-           <CloudUpload className="w-6 h-6 text-primary" />
-        </div>
-        <h1 className="font-headline font-extrabold text-2xl tracking-tight text-on-surface bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-          Google Cloud AI Agent
-        </h1>
-      </div>
-      <div className="flex items-center gap-4">
-        <button className="p-2.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full ring-2 ring-surface"></span>
-        </button>
-        <button className="p-2.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
-          <Settings className="w-5 h-5" />
-        </button>
-        <div className="w-px h-6 bg-outline-variant/30 mx-2" />
-        <div className="flex items-center gap-3 pl-2">
-          <div className="text-right">
-            <p className="text-sm font-bold text-on-surface">Migration Admin</p>
-            <p className="text-[10px] text-on-surface-variant font-mono uppercase tracking-wider">Cloud Architect</p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-secondary to-tertiary flex items-center justify-center text-white font-bold shadow-md ring-2 ring-surface">
-            MA
-          </div>
-        </div>
-      </div>
     </header>
   );
 };
 
-const PageHeader = ({ step, title, description, rightElement }: { step?: string, title: string, description: string, rightElement?: React.ReactNode }) => (
+const PageHeader = ({ step, title, description, rightElement }: { step?: string, title: string, description: React.ReactNode, rightElement?: React.ReactNode }) => (
   <div className="mb-10 flex justify-between items-end">
     <div>
       {step && <span className="text-primary font-mono text-[10px] uppercase tracking-[0.2em] font-bold mb-2 block">{step}</span>}
       <h2 className="text-4xl font-headline font-bold text-on-surface tracking-tight mb-2">{title}</h2>
-      <p className="text-on-surface-variant text-base max-w-2xl">{description}</p>
+      <p className="text-on-surface-variant text-base">{description}</p>
     </div>
     {rightElement && <div>{rightElement}</div>}
   </div>
@@ -378,6 +285,10 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
   };
 
   const handleAnalyzeClick = () => {
+    if (!desc.trim() && !selectedFile) {
+       alert('Please provide an Architecture Diagram or an Additional Description to start the analysis.');
+       return;
+    }
     const metadata = {
       serviceCriticality, rto, globalUserBase,
       trafficScale, trafficPattern, availabilityGoal,
@@ -388,11 +299,28 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
   };
 
   return (
-    <div className="space-y-10">
-      <PageHeader step="Step 01" title="Architecture Register" description="Provide your AWS infrastructure diagram and define your operational goals for a rigorous QA audit." />
+    <div className="animate-fadeIn space-y-10 pb-20">
+      <PageHeader 
+        step="Step 01" 
+        title="Design Capture" 
+        description="Provide your AWS infrastructure diagram and define your operational goals for a rigorous QA audit." 
+        rightElement={(
+          <button
+            onClick={handleAnalyzeClick}
+            disabled={isLoading}
+            className={cn(
+              "bg-[#2563EB] text-white px-10 py-3.5 rounded-[2rem] font-bold text-base shadow-[0_10px_40px_rgba(37,99,235,0.3)] flex items-center gap-3 transition-all hover:scale-[1.02] hover:bg-blue-700 active:scale-[0.98] border border-blue-400/20",
+              isLoading && "opacity-50 cursor-not-allowed bg-slate-400 shadow-none border-none"
+            )}
+          >
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5" />}
+            {isLoading ? "Starting..." : "Start Analysis (Agent 1)"}
+          </button>
+        )}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-6">
+        <div className="lg:col-span-4 space-y-6">
           <div className="glass-panel p-8 rounded-xl border border-outline-variant/30 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-headline font-bold text-xl text-on-surface">Register Architecture Diagram</h3>
@@ -412,7 +340,7 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
                     <img 
                       src={`data:${selectedFile.type};base64,${selectedFile.base64}`} 
                       alt="Architecture Preview" 
-                      className="w-full h-full object-contain bg-white"
+                      className="w-full h-full object-contain bg-surface-container-lowest rounded-md"
                     />
                     <div className="absolute inset-0 bg-primary/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <CheckCircle2 className="w-10 h-10 text-primary drop-shadow-md" />
@@ -448,120 +376,127 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
           </div>
         </div>
 
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-8 space-y-6">
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/30 shadow-lg">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-outline-variant/20">
               <Settings className="w-5 h-5 text-primary" />
               <h3 className="font-headline font-bold text-lg text-on-surface">Operational Goals <span className="text-sm text-on-surface-variant font-normal">(Optional)</span></h3>
             </div>
 
+
             <div className="space-y-6">
               <div className="space-y-3">
                 <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">Business Requirements</h4>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant">Service Criticality</label>
-                  <select value={serviceCriticality} onChange={(e) => setServiceCriticality(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
-                    <option value="">None (Not Specified)</option>\n                    <option value="Tier 1 (Mission Critical)">Tier 1 (Mission Critical)</option>
-                    <option value="Tier 2 (Business Critical)">Tier 2 (Business Critical)</option>
-                    <option value="Tier 3 (Internal/Non-critical)">Tier 3 (Internal/Non-critical)</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant">Global User Base</label>
-                  <select value={globalUserBase} onChange={(e) => setGlobalUserBase(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
-                    <option value="">None (Not Specified)</option>\n                    <option value="Domestic Only">Domestic Only</option>
-                    <option value="Specific Regions">Specific Regions</option>
-                    <option value="Global Service">Global Service</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant">Target RTO</label>
-                  <select value={rto} onChange={(e) => setRto(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
-                    <option value="">None (Not Specified)</option>\n                    <option value="Within 1 hour">Within 1 hour</option>
-                    <option value="Within 4 hours">Within 4 hours</option>
-                    <option value="Within 24 hours">Within 24 hours</option>
-                    <option value="Best Effort">Best Effort</option>
-                  </select>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-on-surface-variant">Service Criticality</label>
+                    <select value={serviceCriticality} onChange={(e) => setServiceCriticality(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                      <option value="">None (Not Specified)</option>
+                      <option value="Tier 1 (Mission Critical)">Tier 1 (Mission Critical)</option>
+                      <option value="Tier 2 (Business Critical)">Tier 2 (Business Critical)</option>
+                      <option value="Tier 3 (Internal/Non-critical)">Tier 3 (Internal/Non-critical)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-on-surface-variant">Global User Base</label>
+                    <select value={globalUserBase} onChange={(e) => setGlobalUserBase(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                      <option value="">None (Not Specified)</option>
+                      <option value="Domestic Only">Domestic Only</option>
+                      <option value="Specific Regions">Specific Regions</option>
+                      <option value="Global Service">Global Service</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-on-surface-variant">Target RTO</label>
+                    <select value={rto} onChange={(e) => setRto(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                      <option value="">None (Not Specified)</option>
+                      <option value="Within 1 hour">Within 1 hour</option>
+                      <option value="Within 4 hours">Within 4 hours</option>
+                      <option value="Within 24 hours">Within 24 hours</option>
+                      <option value="Best Effort">Best Effort</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-3 pt-4 border-t border-outline-variant/20">
                 <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">Traffic & Scalability</h4>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant">Traffic Scale</label>
-                  <select value={trafficScale} onChange={(e) => setTrafficScale(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
-                    <option value="">None (Not Specified)</option>\n                    <option value="Low (&lt; 1K)">Low (&lt; 1K)</option>
-                    <option value="Medium (1K ~ 10K)">Medium (1K ~ 10K)</option>
-                    <option value="High (10K ~ 100K)">High (10K ~ 100K)</option>
-                    <option value="Massive (&gt; 100K)">Massive (&gt; 100K)</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant">Traffic Pattern</label>
-                  <select value={trafficPattern} onChange={(e) => setTrafficPattern(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
-                    <option value="">None (Not Specified)</option>\n                    <option value="Steady (No Spikes)">Steady (No Spikes)</option>
-                    <option value="Predictable Spikes">Predictable Spikes</option>
-                    <option value="Unpredictable Spikes">Unpredictable Spikes</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant">Availability (SLA) Goal</label>
-                  <select value={availabilityGoal} onChange={(e) => setAvailabilityGoal(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
-                    <option value="">None (Not Specified)</option>\n                    <option value="99.0%">99.0%</option>
-                    <option value="99.9% (Single AZ)">99.9% (Single AZ)</option>
-                    <option value="99.99% (Multi-AZ)">99.99% (Multi-AZ)</option>
-                    <option value="99.999% (Multi-Region)">99.999% (Multi-Region)</option>
-                  </select>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-on-surface-variant">Traffic Scale</label>
+                    <select value={trafficScale} onChange={(e) => setTrafficScale(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                      <option value="">None (Not Specified)</option>
+                      <option value="Low (&lt; 1K)">Low (&lt; 1K)</option>
+                      <option value="Medium (1K ~ 10K)">Medium (1K ~ 10K)</option>
+                      <option value="High (10K ~ 100K)">High (10K ~ 100K)</option>
+                      <option value="Massive (&gt; 100K)">Massive (&gt; 100K)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-on-surface-variant">Traffic Pattern</label>
+                    <select value={trafficPattern} onChange={(e) => setTrafficPattern(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                      <option value="">None (Not Specified)</option>
+                      <option value="Steady (No Spikes)">Steady (No Spikes)</option>
+                      <option value="Predictable Spikes">Predictable Spikes</option>
+                      <option value="Unpredictable Spikes">Unpredictable Spikes</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-on-surface-variant">Availability (SLA) Goal</label>
+                    <select value={availabilityGoal} onChange={(e) => setAvailabilityGoal(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                      <option value="">None (Not Specified)</option>
+                      <option value="99.0%">99.0%</option>
+                      <option value="99.9% (Single AZ)">99.9% (Single AZ)</option>
+                      <option value="99.99% (Multi-AZ)">99.99% (Multi-AZ)</option>
+                      <option value="99.999% (Multi-Region)">99.999% (Multi-Region)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-3 pt-4 border-t border-outline-variant/20">
                 <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">Architecture Standards</h4>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant">Architecture Style</label>
-                  <select value={architectureStyle} onChange={(e) => setArchitectureStyle(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
-                    <option value="">None (Not Specified)</option>\n                    <option value="Monolithic">Monolithic</option>
-                    <option value="Service Oriented (SOA)">Service Oriented (SOA)</option>
-                    <option value="Microservices (MSA)">Microservices (MSA)</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant">Orchestration Platform</label>
-                  <select value={orchestrationTool} onChange={(e) => setOrchestrationTool(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
-                    <option value="">None (Not Specified)</option>\n                    <option value="None (EC2/VM Based)">None (EC2/VM Based)</option>
-                    <option value="Managed Kubernetes (EKS/GKE)">Managed Kubernetes (EKS/GKE)</option>
-                    <option value="Serverless Containers (Fargate/Cloud Run)">Serverless Containers (Fargate/Cloud Run)</option>
-                  </select>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-on-surface-variant">Architecture Style</label>
+                    <select value={architectureStyle} onChange={(e) => setArchitectureStyle(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                      <option value="">None (Not Specified)</option>
+                      <option value="Monolithic">Monolithic</option>
+                      <option value="Service Oriented (SOA)">Service Oriented (SOA)</option>
+                      <option value="Microservices (MSA)">Microservices (MSA)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-on-surface-variant">Orchestration Platform</label>
+                    <select value={orchestrationTool} onChange={(e) => setOrchestrationTool(e.target.value)} className="w-full bg-surface-container border border-outline-variant/20 text-on-surface text-xs rounded p-2 focus:border-primary outline-none">
+                      <option value="">None (Not Specified)</option>
+                      <option value="None (EC2/VM Based)">None (EC2/VM Based)</option>
+                      <option value="Managed Kubernetes (EKS/GKE)">Managed Kubernetes (EKS/GKE)</option>
+                      <option value="Serverless Containers (Fargate/Cloud Run)">Serverless Containers (Fargate/Cloud Run)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-3 pt-4 border-t border-outline-variant/20">
                 <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">Operational Policies</h4>
-                <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
-                  <input type="checkbox" checked={isIaC} onChange={(e) => setIsIaC(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
-                  IaC Applied
-                </label>
-                <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
-                  <input type="checkbox" checked={isImmutable} onChange={(e) => setIsImmutable(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
-                  Immutable Infrastructure
-                </label>
-                <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
-                  <input type="checkbox" checked={isCentralizedLogging} onChange={(e) => setIsCentralizedLogging(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
-                  Centralized Logging
-                </label>
+                <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+                  <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
+                    <input type="checkbox" checked={isIaC} onChange={(e) => setIsIaC(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
+                    IaC Applied
+                  </label>
+                  <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
+                    <input type="checkbox" checked={isImmutable} onChange={(e) => setIsImmutable(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
+                    Immutable Infra
+                  </label>
+                  <label className="flex items-center gap-3 text-xs font-semibold text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
+                    <input type="checkbox" checked={isCentralizedLogging} onChange={(e) => setIsCentralizedLogging(e.target.checked)} className="rounded text-primary focus:ring-primary w-4 h-4 bg-surface-container-low border border-primary/20" />
+                    Central Logging
+                  </label>
+                </div>
               </div>
 
             </div>
-          </div>
-
-          <div className="flex items-center justify-end">
-            <button
-              onClick={handleAnalyzeClick}
-              disabled={isLoading || (!desc.trim() && !selectedFile)}
-              className={cn("bg-gradient-to-r from-primary to-primary-container text-on-primary px-12 py-5 rounded-md font-bold text-lg shadow-xl w-full flex justify-center", (isLoading || (!desc.trim() && !selectedFile)) && "opacity-50 cursor-not-allowed")}
-            >
-              {isLoading ? "Analyzing..." : "Analyze Architecture"}
-            </button>
           </div>
         </div>
       </div>
@@ -571,8 +506,8 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
 
 const MappingPage = ({ mappings, report, onConfirm, awaitingApproval, isLoading }: { mappings: MappingItem[], report: string, onConfirm: () => void, awaitingApproval: boolean, isLoading: boolean }) => {
   return (
-    <div className="space-y-10">
-      <PageHeader step="Step 03" title="Service Mapping" description="Automated translation of source infrastructure into target-native cloud services." />
+    <div className="animate-fadeIn space-y-10 pb-20">
+      <PageHeader step="Step 03" title="Google Cloud Mapping" description="Automated translation of source infrastructure into target-native cloud services." />
       {awaitingApproval && (
         <ApprovalPanel
           title="Mapping Complete - Awaiting Approval"
@@ -657,8 +592,8 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
   const [activeTab, setActiveTab] = useState<'report' | 'checklist'>('report');
 
   return (
-    <div className="space-y-10">
-      <PageHeader step="Step 01" title="Analysis Report & Quality Audit" description="Detailed architecture audit, breakdown, and validation checklist." />
+    <div className="animate-fadeIn space-y-10 pb-20">
+      <PageHeader step="Step 02" title="AWS Audit" description="Detailed architecture audit, breakdown, and validation checklist." />
 
       {awaitingApproval && (
         <ApprovalPanel
@@ -680,7 +615,7 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
       {(!report && (!checklistItems || checklistItems.length === 0)) ? (
         <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No detailed analysis report generated yet.</p>
       ) : (
-        <div className="bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/10 relative flex flex-col overflow-hidden">
+        <div className="bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/10 relative flex flex-col">
           <div className="flex border-b border-outline-variant/20 bg-surface-container-low px-6 pt-4 shrink-0">
             <button onClick={() => setActiveTab('report')} className={cn("px-6 py-3 font-bold text-sm border-b-2 transition-colors", activeTab === 'report' ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface")}>
               Analysis Report
@@ -693,7 +628,7 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
             </button>
           </div>
 
-          <div className="p-8 flex-1 overflow-auto max-h-[800px]">
+          <div className="p-8 flex-1">
             {activeTab === 'report' && (
               <div className="text-on-surface">
                 {report ? (
@@ -714,9 +649,9 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
                   <p className="text-center text-on-surface-variant italic py-8">No checklist items generated.</p>
                 ) : (
                   checklistItems.map((item) => (
-                    <div key={item.id} className={cn("group transition-all duration-300 p-6 flex items-start gap-6 rounded-xl relative overflow-hidden border shadow-[0_1px_2px_rgba(0,0,0,0.02)]", item.status === 'complete' ? "bg-emerald-50/20 border-emerald-200/50 hover:bg-emerald-50/40" : item.status === 'warning' ? "bg-amber-50/20 border-amber-200/50 hover:bg-amber-50/40" : "bg-slate-50/40 border-slate-200/60 hover:bg-slate-50/60")}>
-                      <div className={cn("w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-lg shadow-sm mt-1", item.status === 'complete' ? "bg-white text-emerald-600 border border-emerald-100" : item.status === 'warning' ? "bg-white text-amber-600 border border-amber-100" : "bg-white text-slate-500 border border-slate-100")}>
-                        {item.status === 'complete' ? <CheckCircle2 className="w-6 h-6" /> : item.status === 'warning' ? <AlertTriangle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
+                    <div key={item.id} className={cn("group transition-all duration-300 p-6 flex items-start gap-6 rounded-xl relative overflow-hidden border bg-white hover:shadow-md shadow-sm", item.status === 'complete' ? "border-red-100 hover:border-red-200" : item.status === 'warning' ? "border-amber-100 hover:border-amber-200" : "border-emerald-100 hover:border-emerald-200")}>
+                      <div className={cn("w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-lg shadow-sm mt-1", item.status === 'complete' ? "bg-red-50 text-red-600" : item.status === 'warning' ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600")}>
+                        {item.status === 'complete' ? <AlertTriangle className="w-6 h-6" /> : item.status === 'warning' ? <HelpCircle className="w-6 h-6" /> : <CheckCircle2 className="w-6 h-6" />}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
@@ -726,17 +661,17 @@ const AnalysisPage = ({ report, checklistItems, awaitingApproval, onConfirm, onF
                         <p className="text-sm text-on-surface-variant">{item.description}</p>
                         <div className="flex items-center gap-1 mt-3 text-[11px] font-bold tracking-tight">
                           {item.status === 'complete' ? (
-                            <span className="text-emerald-700 flex items-center gap-1">✅ Verified & Approved — Ready for deployment.</span>
+                            <span className="text-red-600 flex items-center gap-1">❌ Not Applied — Verification passed but not yet applied to target.</span>
                           ) : item.status === 'warning' ? (
-                            <span className="text-amber-700 flex items-center gap-1">⚠️ Attention — Security or architecture concern detected. Certification recommended.</span>
+                            <span className="text-amber-600 flex items-center gap-1">⚠️ Under Review — Security or architecture concern detected. Manual review required.</span>
                           ) : (
-                            <span className="text-slate-600 flex items-center gap-1">⏳ 정보 부족으로 인해 판단이 보류되었습니다. 상세 설계를 확인해 주세요.</span>
+                            <span className="text-emerald-600 flex items-center gap-1">✅ Applied — Already configured in the target environment.</span>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className={cn("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm", item.status === 'complete' ? "bg-emerald-100/80 text-emerald-800" : item.status === 'warning' ? "bg-amber-100/80 text-amber-800" : "bg-slate-100/80 text-slate-700")}>
-                          {item.status === 'complete' ? 'Passed' : item.status === 'warning' ? 'Warning' : 'Pending'}
+                        <span className={cn("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.05)]", item.status === 'complete' ? "bg-red-50 text-red-700" : item.status === 'warning' ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-600")}>
+                          {item.status === 'complete' ? 'Not Applied' : item.status === 'warning' ? 'Under Review' : 'Applied'}
                         </span>
                       </div>
                     </div>
@@ -777,7 +712,7 @@ const TerraformPage = ({ files, report }: { files: { [filename: string]: string 
   };
 
   return (
-    <div className="space-y-10">
+    <div className="animate-fadeIn space-y-10 pb-20">
       <PageHeader step="Step 04" title="Terraform Output" description="Production-ready IaC (Infrastructure as Code) templates based on verified targets." rightElement={(
         <div className="flex gap-2">
           <button onClick={handleDownloadZip} className="bg-surface text-primary border border-primary/20 px-4 py-2 rounded-md font-bold text-xs hover:bg-primary/5 transition-all flex items-center gap-2 shadow-sm">
@@ -790,14 +725,14 @@ const TerraformPage = ({ files, report }: { files: { [filename: string]: string 
         <p className="text-center text-on-surface-variant italic p-12 bg-surface-container-lowest rounded-md">No Terraform code generated yet. Please complete the mapping phase.</p>
       ) : (
         <>
-          <div className="bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/20 overflow-hidden flex h-[600px]">
+          <div className="bg-surface-container-lowest rounded-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.04)] border border-outline-variant/20 overflow-hidden flex h-auto min-h-[600px]">
             <div className="w-[240px] bg-surface-container-low border-r border-outline-variant/20 flex flex-col">
               <div className="p-4 border-b border-outline-variant/10">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
                   <FileText className="w-3 h-3" /> Project Files
                 </h3>
               </div>
-              <div className="flex-1 overflow-y-auto py-2">
+              <div className="flex-1 py-2">
                 {fileNames.map(name => (
                   <button
                     key={name}
@@ -810,22 +745,22 @@ const TerraformPage = ({ files, report }: { files: { [filename: string]: string 
               </div>
             </div>
             
-            <div className="flex-1 flex flex-col min-w-0 bg-[#ffffff]">
-              <div className="h-12 border-b border-outline-variant/10 bg-surface flex items-center justify-between px-4">
+            <div className="flex-1 flex flex-col min-w-0 bg-white">
+              <div className="h-12 border-b border-outline-variant/60 bg-surface-container-low flex items-center justify-between px-4">
                 <div className="flex items-center gap-2 text-sm font-mono font-bold text-on-surface">
                   <Code className="w-4 h-4 text-primary" /> {activeTab}
                 </div>
-                <button onClick={handleCopyCode} className="text-on-surface-variant hover:text-primary transition-colors p-1.5 rounded hover:bg-surface-container" title="Copy code">
+                <button onClick={handleCopyCode} className="text-on-surface-variant hover:text-primary transition-colors p-1.5 rounded hover:bg-white" title="Copy code">
                   <Copy className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex-grow overflow-auto font-mono text-sm bg-[#ffffff] py-4">
+               <div className="flex-grow font-mono text-sm bg-white py-4 shadow-inner">
                 {code.trim().split("\n").map((line, i) => (
-                  <div key={i} className="flex hover:bg-surface-container-low/30 px-4 leading-6 w-max min-w-full">
-                    <div className="w-10 text-on-surface-variant/40 select-none text-right pr-3 font-mono border-r border-outline-variant/10 mr-4 shrink-0 sticky left-0 bg-[#ffffff]">
+                  <div key={i} className="flex hover:bg-surface-container-low px-4 leading-6 w-max min-w-full">
+                    <div className="w-10 text-on-surface-variant/40 select-none text-right pr-3 font-mono border-r border-outline-variant/30 mr-4 shrink-0 sticky left-0 bg-white">
                       {(i + 1).toString().padStart(2, '0')}
                     </div>
-                    <pre className="whitespace-pre text-[#24292e] font-mono">{line || " "}</pre>
+                    <pre className="whitespace-pre text-slate-800 font-mono">{line || " "}</pre>
                   </div>
                 ))}
               </div>
@@ -920,18 +855,41 @@ const CommandBlock = ({ command }: { command: string }) => {
 const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, saKey: string, selectedRules: any[]) => void }) => {
   const [projectId, setProjectId] = useState('');
   const [saKey, setSaKey] = useState('');
-  const [ruleStatuses, setRuleStatuses] = useState<Record<string, string>>({});
+  const [ruleStatuses, setRuleStatuses] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    CHECKLIST_DATA.forEach(r => {
+      initial[r.id] = 'Applied';
+    });
+    return initial;
+  });
 
   const handleStatusChange = (id: string, status: string) => {
     setRuleStatuses(prev => ({ ...prev, [id]: status }));
   };
 
   return (
-    <div className="animate-fadeIn max-w-[1400px] mx-auto space-y-6 pb-20">
+    <div className="animate-fadeIn space-y-6 pb-20">
       <PageHeader
-        step="Phase 1: Configuration"
-        title="GCP Infrastructure Audit Setup"
+        step="Step 01"
+        title="Configuration"
         description="Configure target environment and review checklist rules prior to the AI Audit."
+        rightElement={(
+          <button 
+            onClick={() => {
+              if (!projectId.trim()) { alert('Please enter a GCP Project ID'); return; }
+              if (!saKey.trim()) { alert('Please enter the Service Account JSON Key'); return; }
+              const enrichedRules = CHECKLIST_DATA.map(r => ({
+                 ...r,
+                 user_status: ruleStatuses[r.id] || 'Not Selected'
+              }));
+              onStartAudit(projectId, saKey, enrichedRules);
+            }}
+            className="bg-[#2563EB] text-white px-10 py-3.5 rounded-[2rem] font-bold text-base shadow-[0_10px_40px_rgba(37,99,235,0.3)] flex items-center gap-3 transition-all hover:scale-[1.02] hover:bg-blue-700 active:scale-[0.98] border border-blue-400/20"
+          >
+            <Rocket className="w-5 h-5" />
+            Start Analysis (Agent 1)
+          </button>
+        )}
       />
       
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
@@ -987,44 +945,30 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
             </div>
           </section>
 
-          <button 
-            onClick={() => {
-              if (!projectId.trim()) { alert('Please enter a GCP Project ID'); return; }
-              if (!saKey.trim()) { alert('Please enter the Service Account JSON Key'); return; }
-              const enrichedRules = CHECKLIST_DATA.map(r => ({
-                 ...r,
-                 user_status: ruleStatuses[r.id] || '미선택'
-              }));
-              onStartAudit(projectId, saKey, enrichedRules);
-            }}
-            className="w-full bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Rocket className="w-5 h-5" />
-            Start Analysis (Agent 1)
-          </button>
+
         </div>
 
         {/* Right Column: Checklist Table */}
-        <section className="xl:col-span-8 bg-surface border border-outline-variant/30 rounded-2xl overflow-hidden shadow-sm flex flex-col h-[calc(100vh-140px)]">
+        <section className="xl:col-span-8 bg-surface border border-outline-variant/30 rounded-2xl overflow-hidden shadow-sm flex flex-col h-auto min-h-[800px]">
           <div className="bg-surface-container-lowest border-b border-outline-variant/30 px-6 py-4 flex items-center gap-3 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-tertiary/10 flex items-center justify-center shrink-0">
               <ShieldCheck className="w-4 h-4 text-tertiary" />
             </div>
             <div>
-              <h3 className="font-headline font-bold text-on-surface">Checklist</h3>
-              <p className="text-xs text-on-surface-variant">Review the target rules and set local verification statuses.</p>
+              <h3 className="font-headline font-bold text-on-surface">Manual Checklist</h3>
+              <p className="text-xs text-on-surface-variant">Manually review and set status for each item based on your infrastructure environment.</p>
             </div>
           </div>
           
-          <div className="overflow-x-auto overflow-y-auto flex-1 bg-surface-container-lowest/30">
+          <div className="overflow-x-auto flex-1 bg-surface-container-lowest/30">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 bg-surface z-10">
                 <tr className="border-b border-outline-variant/30 shadow-sm">
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-16 text-center">번호</th>
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-24">타입</th>
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-48">구분</th>
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant">상세내용</th>
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-40 text-center">적용상태</th>
+                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-16 text-center">No.</th>
+                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-24">Type</th>
+                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-48">Category</th>
+                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant">Details</th>
+                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-48 text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/10">
@@ -1040,20 +984,20 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
                     <td className="py-3 px-4 text-xs text-on-surface-variant leading-relaxed">{rule.details}</td>
                     <td className="py-3 px-4 text-center">
                       <select 
-                        value={ruleStatuses[rule.id] || '미선택'}
+                        value={ruleStatuses[rule.id] || 'Not Selected'}
                         onChange={(e) => handleStatusChange(rule.id, e.target.value)}
                         className={cn(
                           "text-xs px-2 py-1.5 rounded-lg focus:ring-1 focus:ring-primary outline-none transition-colors border font-bold cursor-pointer w-full text-center appearance-none",
-                          (ruleStatuses[rule.id] === '만족') ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
-                          (ruleStatuses[rule.id] === '만족하지 않음') ? "bg-red-500/10 text-red-600 border-red-500/20" :
-                          (ruleStatuses[rule.id] === '모름') ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" :
+                          (ruleStatuses[rule.id] === 'Applied') ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
+                          (ruleStatuses[rule.id] === 'Not Applied') ? "bg-red-500/10 text-red-600 border-red-500/20" :
+                          (ruleStatuses[rule.id] === 'Out of Scope') ? "bg-slate-500/10 text-slate-600 border-slate-500/20" :
                           "bg-surface-container text-on-surface-variant border-outline-variant/30 hover:border-outline-variant text-center"
                         )}
                       >
-                        <option value="미선택">미선택</option>
-                        <option value="만족">✅ 만족</option>
-                        <option value="만족하지 않음">❌ 불만족</option>
-                        <option value="모름">❓ 모름</option>
+                        <option value="Not Selected">Not Selected</option>
+                        <option value="Applied">✅ Applied</option>
+                        <option value="Not Applied">❌ Not Applied</option>
+                        <option value="Out of Scope">➖ Out of Scope</option>
                       </select>
                     </td>
                   </tr>
@@ -1072,10 +1016,15 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
   const [isStreaming, setIsStreaming] = useState(false);
   const [report, setReport] = useState<string>(existingReport || '');
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const logsContainerRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
   }, [logs]);
+
 
   useEffect(() => {
     let isMounted = true;
@@ -1140,8 +1089,25 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
                     const logId = Math.random().toString(36).substr(2, 9);
                     
                     if (payload.type === 'analyzer_done') {
-                      setReport(payload.report);
-                      setLogs(prev => [...prev, { id: logId, type: 'status', message: 'Report generated successfully.' }]);
+                      const fullReport = payload.report || '';
+                      // "[섹션 2:" 또는 "**[섹션 2:" 패턴으로 분리 시도
+                      const section2Match = fullReport.match(/(\*\*|)?\[섹션 2:/);
+                      
+                      if (section2Match && section2Match.index !== undefined) {
+                        const section1 = fullReport.substring(0, section2Match.index).trim();
+                        const section2 = fullReport.substring(section2Match.index).trim();
+                        setReport(section1);
+                        // 섹션 2 내용을 별도의 로그 항목으로 추가
+                        setLogs(prev => [...prev, { 
+                          id: logId + '-raw', 
+                          type: 'inventory', 
+                          message: section2 
+                        }]);
+                        setLogs(prev => [...prev, { id: logId, type: 'status', message: 'Infrastructure analysis completed. (Raw data moved to stream below)' }]);
+                      } else {
+                        setReport(fullReport);
+                        setLogs(prev => [...prev, { id: logId, type: 'status', message: 'Report generated successfully.' }]);
+                      }
                     } else if (payload.message) {
                       setLogs(prev => [...prev, { id: logId, type: payload.type, message: payload.message }]);
                     }
@@ -1170,10 +1136,10 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
   }, [projectId, saKey]);
 
   return (
-    <div className="animate-fadeIn max-w-5xl mx-auto space-y-6 pb-20 h-full flex flex-col">
+    <div className="animate-fadeIn space-y-6 pb-20 h-full flex flex-col">
       <PageHeader
-        step="Phase 2: Infrastructure Report"
-        title="Agent 1: GCP Architecture Analysis"
+        step="Step 02"
+        title="Infra Report"
         description="Scanning Cloud Asset Inventory to identify topologies and configurations."
       />
       
@@ -1187,17 +1153,17 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
         />
       )}
       
-      <div className="flex flex-col gap-6 flex-1 min-h-[500px]">
-        {/* Markdown Report Render (Full Width) */}
-        <div className="bg-surface border border-outline-variant/30 rounded-2xl flex flex-col flex-1 overflow-hidden shadow-sm relative">
+      <div className="flex flex-col gap-6 flex-1 min-h-[600px]">
+        {/* Area 1: 분석 리포트 */}
+        <div className="bg-surface border border-outline-variant/30 rounded-2xl flex flex-col h-auto shadow-sm relative">
            <div className="bg-surface-container-lowest border-b border-outline-variant/30 px-4 py-3 flex items-center justify-between">
               <span className="font-headline font-bold text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4 text-tertiary" /> 
-                Extracted Report
+                Infrastructure Analysis Report (Detailed Explanation)
               </span>
               {isStreaming && <div className="flex items-center gap-2 text-xs font-bold text-secondary tracking-widest uppercase"><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</div>}
            </div>
-           <div className="flex-1 overflow-y-auto p-6 bg-surface-container-lowest/30">
+           <div className="p-6 bg-surface-container-lowest/30">
               {report ? (
                  <ReactMarkdown
                    remarkPlugins={[remarkGfm]}
@@ -1210,6 +1176,32 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
                     <span className="text-xs uppercase tracking-widest font-bold">Scanning Infrastructure...</span>
                  </div>
               )}
+           </div>
+        </div>
+
+        {/* Area 2: 수집된 Raw 데이터 (에셋 원시 로그 데이터) */}
+        <div className="bg-surface border border-outline-variant/30 rounded-2xl flex flex-col h-auto shadow-sm relative">
+           <div className="bg-surface-container-lowest border-b border-outline-variant/30 px-4 py-3 flex items-center justify-between">
+              <span className="font-headline font-bold text-sm flex items-center gap-2">
+                <FileDown className="w-4 h-4 text-secondary" />
+                Collected Raw Data (Inventory Details)
+              </span>
+           </div>
+           <div ref={logsContainerRef} className="p-4 bg-surface-container-lowest/30 text-[13px] text-on-surface-variant space-y-2 scroll-smooth max-h-[500px] overflow-y-auto">
+              {logs.filter(log => log.type === 'inventory').map((log) => (
+                <div key={log.id} className="p-1 rounded transition-colors hover:bg-surface-container-low/50 border-b border-outline-variant/5 last:border-0 pb-2">
+                  <span className="text-secondary mr-2 font-bold shrink-0">[{log.type.toUpperCase()}]</span>
+                  <span className="whitespace-pre-wrap break-all leading-relaxed">{log.message}</span>
+                </div>
+              ))}
+              {logs.filter(log => log.type === 'inventory').length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center opacity-80 py-20 italic text-on-surface/70">
+                  <Database className="w-10 h-10 mb-3 text-secondary animate-bounce" />
+                  <span className="text-sm font-black tracking-tight">Awaiting agent's inventory response data...</span>
+                </div>
+              )}
+              {logs.length === 0 && <span className="opacity-50 italic">Awaiting raw data capture...</span>}
+              <div ref={logsEndRef} />
            </div>
         </div>
       </div>
@@ -1236,10 +1228,15 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
   const [remediationMap, setRemediationMap] = useState<Record<string, string>>({});
   const [expandedRules, setExpandedRules] = useState<Record<string, boolean>>({});
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const resultsContainerRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (resultsContainerRef.current) {
+      resultsContainerRef.current.scrollTop = resultsContainerRef.current.scrollHeight;
+    }
   }, [logs]);
+
 
   useEffect(() => {
     let isMounted = true;
@@ -1343,32 +1340,18 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
   const evaluatedRuleIds = new Set(evalResults.map(r => r.rule_id));
 
   return (
-    <div className="animate-fadeIn max-w-7xl mx-auto space-y-6 pb-20 h-full flex flex-col">
-      <div className="flex justify-between items-end mb-4 shrink-0">
-        <div>
-           <span className="text-secondary font-mono text-[10px] uppercase tracking-[0.2em] font-bold mb-2 flex items-center gap-2">
-             <span className="relative flex h-2 w-2">
-                <span className={cn("absolute inline-flex h-full w-full rounded-full opacity-75", isStreaming ? "animate-ping bg-secondary" : "bg-outline-variant")}></span>
-                <span className={cn("relative inline-flex rounded-full h-2 w-2", isStreaming ? "bg-secondary" : "bg-outline-variant")}></span>
-              </span>
-             Phase 2: Live Analysis
-           </span>
-           <h2 className="text-4xl font-headline font-bold text-on-surface tracking-tight mb-2">Realtime Audit Dashboard</h2>
-           <p className="text-on-surface-variant text-base">Monitoring multi-agent infrastructure evaluation for <span className="font-mono text-primary font-bold">{projectId}</span></p>
-        </div>
-        <div className="bg-surface-container px-4 py-2 rounded-xl border border-outline-variant/30 flex items-center gap-4">
-           {['analyzer', 'evaluator', 'remediator'].map((agentName, idx) => (
-             <div key={agentName} className={cn("flex items-center gap-2", activeAgent === agentName ? "opacity-100" : "opacity-40 grayscale")}>
-                <div className={cn("w-6 h-6 rounded flex items-center justify-center", activeAgent === agentName ? "bg-primary text-white shadow-md animate-pulse" : "bg-surface text-on-surface-variant")}>
-                   {idx === 0 ? <Activity className="w-3 h-3" /> : idx === 1 ? <ShieldCheck className="w-3 h-3" /> : <Code className="w-3 h-3" />}
-                </div>
-                <span className="text-xs font-bold uppercase tracking-wider">{agentName}</span>
-                {idx < 2 && <ChevronRight className="w-3 h-3 text-outline-variant ml-2" />}
-             </div>
-           ))}
-        </div>
-      </div>
-
+    <div className="animate-fadeIn space-y-6 pb-20 h-full flex flex-col">
+      <PageHeader
+        step="Step 03"
+        title="Checklist"
+        description={(
+          <p className="text-on-surface-variant text-base">
+            Monitoring multi-agent infrastructure evaluation for <span className="font-mono text-primary font-bold">{projectId}</span>
+          </p>
+        )}
+        rightElement={null}
+      />
+      
       <div className="flex-1 min-h-[500px] flex flex-col gap-6">
         
         {/* Top: Security Posture Summary Dashboard */}
@@ -1386,35 +1369,35 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
            <div className="relative z-10 flex flex-wrap md:flex-nowrap items-center gap-6 md:gap-8 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 shadow-inner min-w-[300px] justify-between">
               <div className="flex flex-col items-start w-1/3 md:w-auto">
                 <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Passed
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Applied
                 </span>
                 <div className="text-3xl font-mono font-black text-emerald-500 tracking-tighter">
-                  {evalResults.filter(r => r.status === 'PASS').length}
+                  {evalResults.filter(r => r.status === 'APPLIED').length}
                 </div>
               </div>
               <div className="hidden md:block w-px h-12 bg-outline-variant/30"></div>
               <div className="flex flex-col items-start w-1/3 md:w-auto">
                 <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" /> Failed
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" /> Not Applied
                 </span>
                 <div className="text-3xl font-mono font-black text-red-500 tracking-tighter shadow-sm">
-                  {evalResults.filter(r => r.status === 'FAIL').length}
+                  {evalResults.filter(r => r.status === 'NOT_APPLIED').length}
                 </div>
               </div>
               <div className="hidden md:block w-px h-12 bg-outline-variant/30"></div>
               <div className="flex flex-col items-start w-full mt-2 md:mt-0 md:w-auto border-t border-outline-variant/20 md:border-0 pt-2 md:pt-0">
                 <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-primary" /> Rules Evaluated
+                  <HelpCircle className="w-3.5 h-3.5 text-amber-500" /> Under Review
                 </span>
-                <div className="text-3xl font-mono font-black text-on-surface tracking-tighter">
-                  {evaluatedRuleIds.size} <span className="text-lg text-outline-variant font-medium">/ {rules.length}</span>
+                <div className="text-3xl font-mono font-black text-amber-500 tracking-tighter">
+                  {evalResults.filter(r => r.status === 'UNDER_REVIEW').length}
                 </div>
               </div>
            </div>
         </div>
 
         {/* Main Body: Rule Finding Cards List */}
-        <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-4 scrollbar-hide">
+        <div ref={resultsContainerRef} className="h-auto pb-10 space-y-4 scroll-smooth">
            {rules.length === 0 ? (
              <div className="w-full h-full flex flex-col items-center justify-center text-outline-variant/60 bg-surface border border-outline-variant/20 rounded-2xl border-dashed">
                {isStreaming ? (
@@ -1426,26 +1409,30 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
            ) : (
              rules.map((rule, idx) => {
                 const ruleResults = evalResults.filter(r => r.rule_id === rule.id);
-                const fails = ruleResults.filter(r => r.status === 'FAIL');
-                const passes = ruleResults.filter(r => r.status === 'PASS');
+                const notApplieds = ruleResults.filter(r => r.status === 'NOT_APPLIED');
+                const applieds = ruleResults.filter(r => r.status === 'APPLIED');
+                const underReviews = ruleResults.filter(r => r.status === 'UNDER_REVIEW');
                 const isExpanded = !!expandedRules[rule.id];
                 
-                const hasFails = fails.length > 0;
+                const hasNotApplied = notApplieds.length > 0;
+                const isUnderReview = underReviews.length > 0;
                 const isWaiting = ruleResults.length === 0;
 
                 return (
-                   <div key={rule.id} className={cn("bg-surface border rounded-2xl overflow-hidden transition-all duration-300 shadow-sm group", hasFails ? "border-red-500/40 ring-2 ring-red-500/10 shadow-red-500/5 transform hover:-translate-y-0.5" : isWaiting ? "border-outline-variant/30 opacity-70 border-dashed" : "border-outline-variant/20 hover:border-outline-variant/50")}>
+                   <div key={rule.id} className={cn("bg-surface border rounded-2xl overflow-hidden transition-all duration-300 shadow-sm group", hasNotApplied ? "border-red-500/40 ring-2 ring-red-500/10 shadow-red-500/5 transform hover:-translate-y-0.5" : isUnderReview ? "border-yellow-500/40 ring-2 ring-yellow-500/10 shadow-yellow-500/5 transform hover:-translate-y-0.5" : isWaiting ? "border-outline-variant/30 opacity-70 border-dashed" : "border-outline-variant/20 hover:border-outline-variant/50")}>
                      {/* Card Header (Always visible onClick Trigger) */}
                      <div 
-                       className={cn("px-5 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 cursor-pointer transition-colors relative", hasFails ? "bg-red-500/5 hover:bg-red-500/10" : "hover:bg-surface-container-lowest/80")}
+                       className={cn("px-5 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 cursor-pointer transition-colors relative", hasNotApplied ? "bg-red-500/5 hover:bg-red-500/10" : "hover:bg-surface-container-lowest/80")}
                        onClick={() => setExpandedRules(p => ({...p, [rule.id]: !isExpanded}))}
                      >
                        {/* Left: Icon & Index */}
                        <div className="hidden md:flex flex-shrink-0 w-10 h-10 rounded-full items-center justify-center font-mono text-xs font-bold ring-4 ring-surface bg-surface-container shadow-sm mt-0.5">
                          {isWaiting ? (
                            <span className="text-outline-variant">{idx + 1}</span>
-                         ) : hasFails ? (
+                         ) : hasNotApplied ? (
                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                         ) : isUnderReview ? (
+                           <HelpCircle className="w-5 h-5 text-amber-500" />
                          ) : (
                            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                          )}
@@ -1455,7 +1442,7 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
                        <div className="flex-1 min-w-0 pr-4">
                          <div className="flex flex-wrap items-center gap-2 mb-2">
                            <span className="md:hidden font-mono text-[10px] font-bold text-outline-variant mr-1">#{idx + 1}</span>
-                           <span className={cn("px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider", hasFails ? "bg-red-500/20 text-red-700" : "bg-surface-container-high text-tertiary")}>{rule.type}</span>
+                           <span className={cn("px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider", hasNotApplied ? "bg-red-500/20 text-red-700" : "bg-surface-container-high text-tertiary")}>{rule.type}</span>
                            <span className="text-[11px] font-bold text-on-surface-variant bg-surface-container-lowest px-2 py-0.5 border border-outline-variant/20 rounded-full">{rule.category}</span>
                          </div>
                          <h4 className="text-base font-bold text-on-surface leading-snug">{rule.details}</h4>
@@ -1464,19 +1451,27 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
                        {/* Right: Badges & Chevron */}
                        <div className="w-full md:w-auto flex flex-row items-center justify-between md:justify-end shrink-0 gap-4 mt-2 md:mt-0 pt-3 md:pt-0 border-t border-outline-variant/10 md:border-t-0">
                          {isWaiting ? (
-                           <div className="flex items-center gap-2 text-xs text-outline-variant italic font-medium bg-surface-container-lowest px-3 py-1.5 rounded-full border border-dashed border-outline-variant/30">
-                             {isStreaming && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                             Pending Analysis...
+                           <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-tighter text-secondary bg-secondary/5 px-3 py-1.5 rounded-full border border-secondary/20 shadow-sm animate-pulse-slow">
+                              {isStreaming && <Loader2 className="w-3.5 h-3.5 animate-spin mr-0.5" />}
+                              Waiting for agent...
+                            </div>
+                         ) : hasNotApplied ? (
+                           <div className="flex items-center gap-1.5 bg-red-500/10 text-red-700 px-3 py-1.5 rounded-full text-xs font-bold">
+                             <AlertTriangle className="w-3.5 h-3.5" />
+                             Not Applied
+                           </div>
+                         ) : isUnderReview ? (
+                           <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-700 px-3 py-1.5 rounded-full text-xs font-bold">
+                             <HelpCircle className="w-3.5 h-3.5" />
+                             Under Review
                            </div>
                          ) : (
-                           <div className="flex items-center gap-2">
-                             {passes.length > 0 && <span className="bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5"/> {passes.length} PASS</span>}
-                             {fails.length > 0 && <span className="bg-red-500/10 text-red-700 border border-red-500/30 px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1.5 animate-pulse-subtle"><AlertTriangle className="w-3.5 h-3.5"/> {fails.length} FAIL</span>}
+                           <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-bold">
+                             <CheckCircle2 className="w-3.5 h-3.5" />
+                             Applied
                            </div>
                          )}
-                         <div className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-colors", isExpanded ? "bg-tertiary/10 text-tertiary" : "bg-surface-container text-on-surface-variant group-hover:bg-tertiary/10 group-hover:text-tertiary")}>
-                           <ChevronRight className={cn("w-5 h-5 transition-transform duration-300", isExpanded && "rotate-90")} />
-                         </div>
+                         <ChevronRight className={cn("w-5 h-5 transition-transform duration-300 text-outline-variant", isExpanded && "rotate-90")} />
                        </div>
                      </div>
 
@@ -1484,16 +1479,28 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
                      <div className={cn("grid transition-[grid-template-rows] duration-300 ease-in-out", isExpanded && (ruleResults.length > 0 || remediationMap[rule.id]) ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
                        <div className="overflow-hidden">
                          <div className="px-5 md:px-20 pb-6 pt-3 bg-surface-container-lowest/50 border-t border-outline-variant/10">
-                           
-                           {/* Failed Findings List */}
-                           {fails.length > 0 && (
+                           {/* Under Review Section */}
+                           {isWaiting && (
+                             <div className="mb-6 animate-slideUp bg-yellow-50/50 border border-yellow-200/50 rounded-xl p-5 relative overflow-hidden">
+                               <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-500"></div>
+                               <h5 className="text-xs font-bold text-yellow-800 uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-yellow-500/10 pb-2">
+                                 <HelpCircle className="w-4 h-4 text-yellow-500" /> Under Review
+                               </h5>
+                               <p className="text-on-surface-variant text-[13px] leading-relaxed font-medium">
+                                 주어진 프로젝트 가용 리소스 풀 및 권한 정보만으로는 규범 달성 여부를 명확히 입증하기 어려워 추가 평가가 진행 중이거나 사용자 보조 검토가 필요합니다.
+                               </p>
+                             </div>
+                           )}
+
+                           {/* Not Applied Findings List */}
+                           {notApplieds.length > 0 && (
                              <div className="mb-6 animate-slideUp" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
                                <h5 className="text-xs font-bold text-red-600 uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-red-500/10 pb-2">
-                                 <AlertTriangle className="w-4 h-4" /> Failed Resources Details
+                                 <AlertTriangle className="w-4 h-4" /> Not Applied Details
                                </h5>
                                <div className="space-y-3 pl-1">
-                                 {fails.map(res => (
-                                   <div key={`fail-${res.id}`} className="bg-surface border border-red-500/20 shadow-sm rounded-xl p-4 relative overflow-hidden flex flex-col md:flex-row md:items-start gap-4">
+                                 {notApplieds.map(res => (
+                                   <div key={`not-applied-${res.id}`} className="bg-surface border border-red-500/20 shadow-sm rounded-xl p-4 relative overflow-hidden flex flex-col md:flex-row md:items-start gap-4">
                                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-red-500/80"></div>
                                      <div className="text-[10px] font-mono font-bold text-on-surface bg-surface-container border border-outline-variant/20 px-2 py-1.5 rounded-md shadow-inner shrink-0 break-all w-fit md:max-w-[200px]">
                                        {res.resource || 'Global Project Level'}
@@ -1507,15 +1514,15 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
                              </div>
                            )}
 
-                           {/* Passed Findings List */}
-                           {passes.length > 0 && (
+                           {/* Applied Findings List */}
+                           {applieds.length > 0 && (
                              <div className="mb-6 animate-slideUp" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
                                <h5 className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-emerald-500/10 pb-2">
-                                 <CheckCircle2 className="w-4 h-4" /> Passed Resources Details
+                                 <CheckCircle2 className="w-4 h-4" /> Applied Resources Details
                                </h5>
                                <div className="space-y-3 pl-1">
-                                 {passes.map(res => (
-                                   <div key={`pass-${res.id}`} className="bg-surface border border-emerald-500/20 shadow-sm rounded-xl p-4 relative overflow-hidden flex flex-col md:flex-row md:items-start gap-4">
+                                 {applieds.map(res => (
+                                   <div key={`applied-${res.id}`} className="bg-surface border border-emerald-500/20 shadow-sm rounded-xl p-4 relative overflow-hidden flex flex-col md:flex-row md:items-start gap-4">
                                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500/80"></div>
                                      <div className="text-[10px] font-mono font-bold text-on-surface bg-surface-container border border-outline-variant/20 px-2 py-1.5 rounded-md shadow-inner shrink-0 break-all w-fit md:max-w-[200px]">
                                        {res.resource || 'Global Project Level'}
@@ -1555,13 +1562,13 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
                                 </div>
                               </div>
                            )}
-                           
                          </div>
                        </div>
                      </div>
                    </div>
                 );
              })
+
            )}
         </div>
       </div>
@@ -1584,10 +1591,13 @@ export default function App() {
   const [loadingMsg, setLoadingMsg] = useState<string>("Analyzing architecture...");
 
   // GCP Advisor States
+
   const [auditProjectId, setAuditProjectId] = useState<string>('');
   const [auditSaKey, setAuditSaKey] = useState<string>('');
   const [auditRules, setAuditRules] = useState<any[]>([]);
   const [infrastructureReport, setInfrastructureReport] = useState<string>('');
+
+
 
   const handleStartAudit = (projectId: string, saKey: string, rules: any[]) => {
       setAuditProjectId(projectId);
@@ -1805,15 +1815,15 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden w-full">
-      <TopBar />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar activePage={activePage} onPageChange={setActivePage} appMode={appMode} onModeChange={setAppMode} />
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto blueprint-grid">
-          <div className="p-12 max-w-7xl w-full mx-auto">
-            <AnimatePresence mode="wait">
-              <motion.div key={activePage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }}>
+    <div className="flex flex-col h-screen overflow-hidden w-full bg-background font-body text-on-surface">
+      <TopBar activePage={activePage} onPageChange={setActivePage} appMode={appMode} onModeChange={setAppMode} />
+      
+      <div className="flex-1 overflow-x-hidden overflow-y-auto relative blueprint-grid">
+        <main className="min-h-full flex flex-col relative">
+          <div className="flex-1">
+          <div className="p-6 md:p-8 lg:p-12 max-w-7xl w-full mx-auto">
+            <AnimatePresence>
+              <motion.div key={activePage} initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.2, ease: 'easeOut' }}>
                 {activePage === 'upload' && <UploadPage onAnalyze={(d, m, f) => { setLoadingMsg("🔍 Analyzing AWS infrastructure architecture..."); handleRunAgent(d, m, f, "aws_analyzer"); }} isLoading={isLoading} />}
                 {activePage === 'analysis' && <AnalysisPage report={analysisReport} checklistItems={checklist} awaitingApproval={awaitingApproval} onConfirm={() => {
                   try {
@@ -1848,18 +1858,15 @@ ${safeMappings}`;
               </motion.div>
             </AnimatePresence>
             {isLoading && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center z-50 animate-fadeIn">
-                <div className="w-14 h-14 border-4 border-secondary border-t-transparent rounded-full animate-spin mb-4 shadow-xl"></div>
-                <div className="bg-slate-900/95 px-10 py-4 rounded-full shadow-2xl border border-slate-800/40 flex items-center gap-4 animate-slideUp">
-                  <div className="w-3 h-3 bg-secondary rounded-full animate-ping"></div>
-                  <p className="text-white font-headline font-bold text-xl tracking-tight">{loadingMsg || "Analyzing appropriate cloud infrastructure..."}</p>
+              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center z-[100] animate-fadeIn">
+                <div className="w-14 h-14 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4 shadow-xl"></div>
+                <div className="bg-white px-10 py-5 rounded-full shadow-2xl border border-gray-100 flex items-center gap-4 animate-slideUp">
+                  <div className="w-3 h-3 bg-primary rounded-full animate-ping"></div>
+                  <p className="text-slate-800 font-headline font-bold text-lg tracking-wide">{loadingMsg || "Analyzing appropriate cloud infrastructure..."}</p>
                 </div>
               </div>
             )}
-            <footer className="mt-20 pt-10 border-t border-outline-variant/10 flex items-center justify-between text-on-surface-variant opacity-40 italic text-xs">
-              <p>Vertex Cloud Protocol • Automated System Validation Session #8812-B</p>
-              <p>All timestamps are UTC-0</p>
-            </footer>
+
             </div>
           </div>
         </main>

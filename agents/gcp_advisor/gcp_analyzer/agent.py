@@ -15,7 +15,7 @@ def load_prompt(filename):
 
 root_agent = Agent(
     name="gcp_analyzer",
-    model=os.getenv("MODEL", "gemini-3.1-pro"),
+    model=os.getenv("MODEL", "gemini-3.1-pro-preview"),
     description="Extracts objective metadata and configurations about the user's Google Cloud environment to build an infrastructure report. It does not evaluate compliance.",
     instruction=load_prompt("gcp_analyzer.txt"),
     before_model_callback=log_query_to_model,

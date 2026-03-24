@@ -14,7 +14,7 @@ def load_prompt(filename):
 
 root_agent = Agent(
     name="gcp_translator",
-    model=os.getenv("MODEL", "gemini-2.5-pro"),
+    model=os.getenv("MODEL", "gemini-3.1-pro-preview"),
     description="Translates an AWS infrastructure analysis report into an optimized GCP architecture mapping.",
     instruction=load_prompt("gcp_translator.txt"),
     before_model_callback=log_query_to_model,

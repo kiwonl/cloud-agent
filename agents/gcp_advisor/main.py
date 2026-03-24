@@ -4,6 +4,9 @@ import logging
 import os
 import sys
 from typing import List, Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -28,25 +31,42 @@ from fastapi.middleware.cors import CORSMiddleware
 from google.adk.runners import Runner, InMemorySessionService
 from google.genai.types import Content, Part
 
+# Global session service to reuse across requests
+global_session_service = InMemorySessionService()
+
 async def run_agent_stateless(agent, prompt: str, session_id: str) -> str:
+    # Use the global session service instead of creating a new one every time
     runner = Runner(
         app_name="gcp_advisor", 
         agent=agent, 
-        session_service=InMemorySessionService(), 
+        session_service=global_session_service, 
         auto_create_session=True
     )
-    events = runner.run_async(
-        user_id="default_user",
-        session_id=session_id,
-        new_message=Content(role="user", parts=[Part.from_text(text=prompt)])
-    )
-    res = ""
-    async for event in events:
-        if getattr(event, "content", None) and getattr(event.content, "parts", None):
-            for part in event.content.parts:
-                if getattr(part, "text", None):
-                    res += part.text
-    return res
+    
+    # Adding a simple retry logic for 429 Resource Exhausted
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            events = runner.run_async(
+                user_id="default_user",
+                session_id=session_id,
+                new_message=Content(role="user", parts=[Part.from_text(text=prompt)])
+            )
+            res = ""
+            async for event in events:
+                if getattr(event, "content", None) and getattr(event.content, "parts", None):
+                    for part in event.content.parts:
+                        if getattr(part, "text", None):
+                            res += part.text
+            return res
+        except Exception as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 2
+                logger.warning(f"429 detected, retrying in {wait_time}s... (Attempt {attempt + 1}/{max_retries})")
+                await asyncio.sleep(wait_time)
+                continue
+            raise e
+    return ""
 router = APIRouter()
 
 import tempfile
@@ -120,16 +140,18 @@ async def stream_evaluate(req: EvaluateRequest):
                 try:
                     eval_text = await run_agent_stateless(evaluator_agent, eval_prompt, f"{req.session_id}_{item_id}_eval")
                     
-                    status = "PASS"
-                    # Simple heuristic parsing since agent returns unstructured text
+                    status = "APPLIED"  # Default 'APPLIED' (matches user's 'PENDING -> APPLIED')
                     upper_text = eval_text.upper()
-                    if "FAIL" in upper_text: status = "FAIL"
-                    elif "WARN" in upper_text: status = "WARN"
-                    elif "N.A" in upper_text or "N/A" in upper_text: status = "N/A"
+                    if "FAIL" in upper_text or "NOT APPLIED" in upper_text or "NOT_APPLIED" in upper_text or "PASSED" in upper_text or "PASS" in upper_text:
+                        status = "NOT_APPLIED"  # Matches user's 'PASSED -> NOT_APPLIED'
+                    elif "UNDER_REVIEW" in upper_text or "UNDER REVIEW" in upper_text or "WARN" in upper_text:
+                        status = "UNDER_REVIEW" # Matches user's 'WARNING -> UNDER_REVIEW'
+                    elif "N.A" in upper_text or "N/A" in upper_text:
+                        status = "N/A"
                     
                     await queue.put(f"data: {json.dumps({'type': 'result', 'agent': 'evaluator', 'rule_id': item_id, 'status': status, 'reason': eval_text, 'resource': 'Target Project'})}\n\n")
                     
-                    if status in ["FAIL", "WARN"]:
+                    if status in ["NOT_APPLIED", "WARNING"]:
                         await queue.put(f"data: {json.dumps({'type': 'status', 'agent': 'remediator', 'rule_id': item_id, 'message': f'Invoking Agent 3 for Remediation on {item_id}...'})}\n\n")
                         
                         rem_prompt = (
@@ -170,6 +192,8 @@ async def audit_analyze(req: AnalyzeRequest):
 @router.post("/api/v1/audit/evaluate")
 async def audit_evaluate(req: EvaluateRequest):
     return StreamingResponse(stream_evaluate(req), media_type="text/event-stream")
+
+
 
 @router.get("/health")
 def health_check():

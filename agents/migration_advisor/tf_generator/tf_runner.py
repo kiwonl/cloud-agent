@@ -70,7 +70,7 @@ async def run_terraform_with_self_healing(architecture_proposal: str) -> str:
     with open(instruction_path, 'r', encoding='utf-8') as f:
         sys_instruction = f.read()
         
-    model_name = os.getenv("MODEL", "gemini-2.5-pro")
+    model_name = os.getenv("MODEL", "gemini-3.1-pro-preview")
     config = GenerateContentConfig(system_instruction=sys_instruction)
     
     response = client.models.generate_content(
