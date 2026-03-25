@@ -135,19 +135,25 @@ async def stream_evaluate(req: EvaluateRequest):
                     f"Checklist Item Rule:\n{rule_text}\n"
                     f"---\n"
                     f"Infrastructure Report:\n{req.infrastructure_report}\n"
+                    f"(IMPORTANT: Your output Reasoning MUST be written in Korean! 모든 답변은 반드시 한국어로 상세히 작성하세요.)\n"
                 )
                 
                 try:
                     eval_text = await run_agent_stateless(evaluator_agent, eval_prompt, f"{req.session_id}_{item_id}_eval")
                     
-                    status = "APPLIED"  # Default 'APPLIED' (matches user's 'PENDING -> APPLIED')
+                    status = "APPLIED"  # Default 'APPLIED'
                     upper_text = eval_text.upper()
-                    if "FAIL" in upper_text or "NOT APPLIED" in upper_text or "NOT_APPLIED" in upper_text or "PASSED" in upper_text or "PASS" in upper_text:
-                        status = "NOT_APPLIED"  # Matches user's 'PASSED -> NOT_APPLIED'
+                    # Logic: If it has FAIL or explicitly states NOT_APPLIED, then it is NOT_APPLIED.
+                    if "FAIL" in upper_text or "NOT APPLIED" in upper_text or "NOT_APPLIED" in upper_text:
+                        status = "NOT_APPLIED"
+                    # If it has WARN or UNDER_REVIEW, then it is UNDER_REVIEW.
                     elif "UNDER_REVIEW" in upper_text or "UNDER REVIEW" in upper_text or "WARN" in upper_text:
-                        status = "UNDER_REVIEW" # Matches user's 'WARNING -> UNDER_REVIEW'
+                        status = "UNDER_REVIEW"
                     elif "N.A" in upper_text or "N/A" in upper_text:
                         status = "N/A"
+                    # If it has PASS or PASSED, it is definitively APPLIED.
+                    elif "PASS" in upper_text or "PASSED" in upper_text:
+                        status = "APPLIED"
                     
                     await queue.put(f"data: {json.dumps({'type': 'result', 'agent': 'evaluator', 'rule_id': item_id, 'status': status, 'reason': eval_text, 'resource': 'Target Project'})}\n\n")
                     

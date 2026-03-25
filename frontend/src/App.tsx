@@ -20,6 +20,7 @@ import {
   ChevronDown,
   CheckCircle2,
   AlertTriangle,
+  AlertCircle,
   Clock,
   Info,
   ShieldCheck,
@@ -48,9 +49,6 @@ import { Page, NavItem, VerificationItem, MappingItem, ChatMessage, AppMode } fr
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-
-
-
 // --- Common Markdown Styles ---
 const SharedMarkdownComponents = {
   h1: ({ node, ...props }: any) => <h1 className="text-2xl font-headline font-bold text-primary mt-8 mb-4" {...props} />,
@@ -76,7 +74,7 @@ const SharedMarkdownComponents = {
           <Code className="w-3 h-3" />
           {match[1]}
         </div>
-        <pre className="bg-[#1e1e1e] p-4 overflow-x-auto text-sm">
+        <pre className="bg-[#1e1e1e] p-4 overflow-x-auto text-[12px] max-h-[500px] overflow-y-auto custom-scrollbar">
           <code className="text-[#d4d4d4] font-mono" {...props}>{children}</code>
         </pre>
       </div>
@@ -194,7 +192,7 @@ const PageHeader = ({ step, title, description, rightElement }: { step?: string,
     <div>
       {step && <span className="text-primary font-mono text-[10px] uppercase tracking-[0.2em] font-bold mb-2 block">{step}</span>}
       <h2 className="text-4xl font-headline font-bold text-on-surface tracking-tight mb-2">{title}</h2>
-      <p className="text-on-surface-variant text-base">{description}</p>
+      <div className="text-on-surface-variant text-base">{description}</div>
     </div>
     {rightElement && <div>{rightElement}</div>}
   </div>
@@ -754,7 +752,7 @@ const TerraformPage = ({ files, report }: { files: { [filename: string]: string 
                   <Copy className="w-4 h-4" />
                 </button>
               </div>
-               <div className="flex-grow font-mono text-sm bg-white py-4 shadow-inner">
+                <div className="flex-grow font-mono text-sm bg-white py-4 shadow-inner overflow-auto">
                 {code.trim().split("\n").map((line, i) => (
                   <div key={i} className="flex hover:bg-surface-container-low px-4 leading-6 w-max min-w-full">
                     <div className="w-10 text-on-surface-variant/40 select-none text-right pr-3 font-mono border-r border-outline-variant/30 mr-4 shrink-0 sticky left-0 bg-white">
@@ -767,7 +765,7 @@ const TerraformPage = ({ files, report }: { files: { [filename: string]: string 
             </div>
           </div>
 
-          {/* 🛡️ [수정] 테라폼 코드 분석 리포트 하단 렌더링 */}
+            {/* 🛡️ [Modified] Render Terraform code analysis report at the bottom */}
           {report && (
             <div className="mt-8 pt-8 border-t border-outline-variant/20">
               <div className="bg-surface-container-lowest p-8 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-outline-variant/10">
@@ -824,12 +822,52 @@ const CHECKLIST_DATA = [
   { type: '아키텍처', category: 'HA아키텍쳐', details: 'HA 구성 시 Multi AZ 가 고려되었는가?' },
   { type: '아키텍처', category: 'HA아키텍쳐', details: 'SPOF(Single Point of Failure) 가 없는가?' },
   { type: '아키텍처', category: 'HA아키텍쳐', details: '트래픽 급증에 대비한 인프라가 설정되어 있는가? (Autoscaling, Queue)' },
+  { type: '아키텍처', category: 'HA아키텍쳐', details: '트래픽 급증에 대비한 인프라가 설정되어 있는가? (Autoscaling, Queue)' },
+  { type: '아키텍처', category: 'HA아키텍쳐', details: '트래픽 급증에 대비한 인프라가 설정되어 있는가? (Autoscaling, Queue)' },
   { type: '아키텍처', category: 'DR아키텍쳐', details: 'RTO / RPO 가 적절히 수립되었는가?' },
   { type: '아키텍처', category: 'DR아키텍쳐', details: 'DR 전략 수립이 되었는가?' },
   { type: '아키텍처', category: 'Kubernetes', details: 'Public Cloud 의 Kubernetes cluster 구성 시 서비스 VPC 내 Multi cluster 형태로 구성하였는가?' },
   { type: '아키텍처', category: 'Kubernetes', details: 'GKE cluster 의 자동 확장은 적용해서 구축했는가?' },
   { type: '아키텍처', category: 'Kubernetes', details: '특정한 패턴을 갖는 Spike traffic 은 KEDA Scaler를 활용하여 구축하였는가?' }
 ].map((item, idx) => ({ id: `rule_${idx + 1}`, ...item }));
+
+const extractSection = (text: string, title: string): string => {
+  if (!text) return "";
+  const lines = text.split('\n');
+  let inSection = false;
+  let result: string[] = [];
+  
+  // 대소문자 무시 및 마크다운 볼드(**), 하이픈(-), 우물정(###) 기호가 동반되더라도 유연하게 매칭
+  const titleRegex = new RegExp(`(?:\\*\\*|- |### |\\* )?${title}\\s*:`, 'i');
+  const sectionBreakRegex = /^(?:- \*\*|### |\* |- |[a-zA-Z0-9]+:)/;
+
+  for (const line of lines) {
+    if (titleRegex.test(line)) {
+      inSection = true;
+      const contentAfterTitle = line.split(':').slice(1).join(':').trim();
+      if (contentAfterTitle) result.push(contentAfterTitle);
+      continue;
+    }
+    
+    // 만약 다른 섹션(예: 또 다른 필드나 메타데이터 등)이 나타나면 요약 파싱을 종료
+    if (inSection && sectionBreakRegex.test(line.trim())) {
+      // 하지만 본인 영역 내 특수 개행이 아닌 정말로 다른 명명 필드(ex: "- **Status**:") 구조일 때 종료
+      if (line.trim().startsWith('- **') || line.trim().startsWith('###')) {
+        break;
+      }
+    }
+    
+    // 특정 섹션 추출 시 예외 간섭 방어
+    if (inSection && title === 'Reasoning' && line.includes('Google Cloud Best Practices')) {
+      break;
+    }
+
+    if (inSection) {
+      result.push(line);
+    }
+  }
+  return result.join('\n').trim();
+};
 
 const CommandBlock = ({ command }: { command: string }) => {
   const [copied, setCopied] = useState(false);
@@ -857,8 +895,8 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
   const [saKey, setSaKey] = useState('');
   const [ruleStatuses, setRuleStatuses] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    CHECKLIST_DATA.forEach(r => {
-      initial[r.id] = 'Applied';
+    CHECKLIST_DATA.forEach((r, idx) => {
+      initial[r.id] = idx % 3 === 0 ? 'Yes' : idx % 3 === 1 ? 'No' : 'Out of Scope';
     });
     return initial;
   });
@@ -872,29 +910,38 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
       <PageHeader
         step="Step 01"
         title="Configuration"
-        description="Configure target environment and review checklist rules prior to the AI Audit."
-        rightElement={(
-          <button 
-            onClick={() => {
-              if (!projectId.trim()) { alert('Please enter a GCP Project ID'); return; }
-              if (!saKey.trim()) { alert('Please enter the Service Account JSON Key'); return; }
-              const enrichedRules = CHECKLIST_DATA.map(r => ({
-                 ...r,
-                 user_status: ruleStatuses[r.id] || 'Not Selected'
-              }));
-              onStartAudit(projectId, saKey, enrichedRules);
-            }}
-            className="bg-[#2563EB] text-white px-10 py-3.5 rounded-[2rem] font-bold text-base shadow-[0_10px_40px_rgba(37,99,235,0.3)] flex items-center gap-3 transition-all hover:scale-[1.02] hover:bg-blue-700 active:scale-[0.98] border border-blue-400/20"
-          >
-            <Rocket className="w-5 h-5" />
-            Start Analysis (Agent 1)
-          </button>
-        )}
+        description={<p className="text-on-surface-variant text-base">Configure target environment and review checklist rules prior to the AI Audit.</p>}
+        rightElement={(() => {
+          const isAllChecked = CHECKLIST_DATA.every(r => ruleStatuses[r.id] === 'Yes' || ruleStatuses[r.id] === 'No' || ruleStatuses[r.id] === 'Out of Scope');
+          return (
+            <button 
+              disabled={!isAllChecked}
+              onClick={() => {
+                if (!projectId.trim()) { alert('Please enter a GCP Project ID'); return; }
+                if (!saKey.trim()) { alert('Please enter the Service Account JSON Key'); return; }
+                const enrichedRules = CHECKLIST_DATA.map(r => ({
+                   ...r,
+                   user_status: ruleStatuses[r.id]
+                }));
+                onStartAudit(projectId, saKey, enrichedRules);
+              }}
+              className={cn(
+                "text-white px-10 py-3.5 rounded-[2rem] font-bold text-base flex items-center gap-3 transition-all border shadow-[0_10px_40px_rgba(37,99,235,0.3)]",
+                isAllChecked 
+                  ? "bg-[#2563EB] border-blue-400/20 hover:scale-[1.02] hover:bg-blue-700 active:scale-[0.98]" 
+                  : "bg-slate-400 border-slate-300 cursor-not-allowed opacity-60 shadow-none"
+              )}
+            >
+              <Rocket className="w-5 h-5" />
+              Start Analysis (Agent 1)
+            </button>
+          );
+        })()}
       />
       
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* Left Column: Input + Button */}
-        <div className="xl:col-span-4 flex flex-col gap-6 sticky top-6">
+        <div className="xl:col-span-4 flex flex-col gap-6 sticky top-6 font-medium">
           <section className="bg-surface border border-outline-variant/30 rounded-2xl overflow-hidden shadow-sm">
             <div className="bg-surface-container-lowest border-b border-outline-variant/30 px-6 py-4 flex items-center gap-3 shrink-0">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -971,7 +1018,7 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
                   <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-48 text-center">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/10">
+              <tbody className="divide-y divide-outline-variant/10 text-on-surface">
                 {CHECKLIST_DATA.map((rule, idx) => (
                   <tr key={rule.id} className="hover:bg-surface-container-lowest/50 transition-colors">
                     <td className="py-3 px-4 text-xs font-mono text-on-surface-variant text-center">{idx + 1}</td>
@@ -983,22 +1030,41 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
                     <td className="py-3 px-4 text-xs font-bold text-on-surface">{rule.category}</td>
                     <td className="py-3 px-4 text-xs text-on-surface-variant leading-relaxed">{rule.details}</td>
                     <td className="py-3 px-4 text-center">
-                      <select 
-                        value={ruleStatuses[rule.id] || 'Not Selected'}
-                        onChange={(e) => handleStatusChange(rule.id, e.target.value)}
-                        className={cn(
-                          "text-xs px-2 py-1.5 rounded-lg focus:ring-1 focus:ring-primary outline-none transition-colors border font-bold cursor-pointer w-full text-center appearance-none",
-                          (ruleStatuses[rule.id] === 'Applied') ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
-                          (ruleStatuses[rule.id] === 'Not Applied') ? "bg-red-500/10 text-red-600 border-red-500/20" :
-                          (ruleStatuses[rule.id] === 'Out of Scope') ? "bg-slate-500/10 text-slate-600 border-slate-500/20" :
-                          "bg-surface-container text-on-surface-variant border-outline-variant/30 hover:border-outline-variant text-center"
-                        )}
-                      >
-                        <option value="Not Selected">Not Selected</option>
-                        <option value="Applied">✅ Applied</option>
-                        <option value="Not Applied">❌ Not Applied</option>
-                        <option value="Out of Scope">➖ Out of Scope</option>
-                      </select>
+                      <div className="flex items-center justify-center gap-1.5 min-w-[120px]">
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(rule.id, 'Yes')}
+                          className={cn(
+                            "px-2.5 py-1.5 rounded-lg text-[11px] font-black transition-all duration-200 border w-10 flex items-center justify-center shadow-sm",
+                            (ruleStatuses[rule.id] === 'Yes') ? "bg-emerald-600 text-white border-emerald-700" : "bg-surface text-on-surface-variant border-outline-variant/30 hover:border-outline-variant hover:bg-surface-container-low"
+                          )}
+                          title="Yes (Applied)"
+                        >
+                          Y
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(rule.id, 'No')}
+                          className={cn(
+                            "px-2.5 py-1.5 rounded-lg text-[11px] font-black transition-all duration-200 border w-10 flex items-center justify-center shadow-sm",
+                            (ruleStatuses[rule.id] === 'No') ? "bg-red-600 text-white border-red-700" : "bg-surface text-on-surface-variant border-outline-variant/30 hover:border-outline-variant hover:bg-surface-container-low"
+                          )}
+                          title="No (Not Applied)"
+                        >
+                          N
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(rule.id, 'Out of Scope')}
+                          className={cn(
+                            "px-2.5 py-1.5 rounded-lg text-[11px] font-black transition-all duration-200 border min-w-[36px] px-2 flex items-center justify-center shadow-sm",
+                            (ruleStatuses[rule.id] === 'Out of Scope') ? "bg-slate-600 text-white border-slate-700" : "bg-surface text-on-surface-variant border-outline-variant/30 hover:border-outline-variant hover:bg-surface-container-low"
+                          )}
+                          title="Out of Scope"
+                        >
+                          OoS
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1011,11 +1077,22 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
   );
 };
 
+interface AuditLog {
+  id: string;
+  agent: string;
+  type: string;
+  message?: string;
+  rule_id?: string;
+  status?: string;
+  reason?: string;
+  resource?: string;
+  data?: string;
+}
+
 const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoading, setIsLoading }: { projectId: string, saKey: string, existingReport: string, onProceed: (report: string) => void, isLoading: boolean, setIsLoading: (val: boolean) => void }) => {
   const [logs, setLogs] = useState<{ id: string, message: string, type: string }[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [report, setReport] = useState<string>(existingReport || '');
-  const logsEndRef = useRef<HTMLDivElement>(null);
   const logsContainerRef = useRef<HTMLDivElement>(null);
 
 
@@ -1090,20 +1167,25 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
                     
                     if (payload.type === 'analyzer_done') {
                       const fullReport = payload.report || '';
-                      // "[섹션 2:" 또는 "**[섹션 2:" 패턴으로 분리 시도
-                      const section2Match = fullReport.match(/(\*\*|)?\[섹션 2:/);
+
+                      const section2HeaderRegex = /(\*\*|)?\[Identified Raw Resource Data\]/;
+                      const section2Match = fullReport.match(section2HeaderRegex);
                       
                       if (section2Match && section2Match.index !== undefined) {
-                        const section1 = fullReport.substring(0, section2Match.index).trim();
-                        const section2 = fullReport.substring(section2Match.index).trim();
+                        let section1 = fullReport.substring(0, section2Match.index).trim();
+                        let section2 = fullReport.substring(section2Match.index).trim();
+
+                        section1 = section1.replace(/#+\s*GCP Infrastructure Architecture Report\s*\n*/gi, '');
+                        section1 = section1.replace(/(#+\s*)?(\*\*|)?\[Infrastructure Configuration Details\](\*\*)?\s*\n*/gi, '');
+                        section2 = section2.replace(/(#+\s*)?(\*\*|)?\[Identified Raw Resource Data\](\*\*)?\s*\n*/gi, '');
+
                         setReport(section1);
-                        // 섹션 2 내용을 별도의 로그 항목으로 추가
-                        setLogs(prev => [...prev, { 
+                        setLogs(prev => [...prev.filter(l => l.type !== 'inventory'), { 
                           id: logId + '-raw', 
                           type: 'inventory', 
                           message: section2 
                         }]);
-                        setLogs(prev => [...prev, { id: logId, type: 'status', message: 'Infrastructure analysis completed. (Raw data moved to stream below)' }]);
+                        setLogs(prev => [...prev, { id: logId, type: 'status', message: 'Infrastructure analysis completed. (Raw resource data extracted)' }]);
                       } else {
                         setReport(fullReport);
                         setLogs(prev => [...prev, { id: logId, type: 'status', message: 'Report generated successfully.' }]);
@@ -1133,14 +1215,14 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
       isMounted = false;
       if (reader) reader.cancel();
     };
-  }, [projectId, saKey]);
+  }, [projectId, saKey, existingReport]);
 
   return (
     <div className="animate-fadeIn space-y-6 pb-20 h-full flex flex-col">
       <PageHeader
         step="Step 02"
         title="Infra Report"
-        description="Scanning Cloud Asset Inventory to identify topologies and configurations."
+        description={<p className="text-on-surface-variant text-base">Scanning Cloud Asset Inventory to identify topologies and configurations.</p>}
       />
       
       {!isStreaming && report && (
@@ -1153,9 +1235,9 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
         />
       )}
       
-      <div className="flex flex-col gap-6 flex-1 min-h-[600px]">
-        {/* Area 1: 분석 리포트 */}
-        <div className="bg-surface border border-outline-variant/30 rounded-2xl flex flex-col h-auto shadow-sm relative">
+      <div className="flex flex-col gap-6 flex-1 min-h-[600px] overflow-hidden">
+        {/* Area 1: Analysis Report */}
+        <div className="bg-surface border border-outline-variant/30 rounded-2xl flex flex-col h-auto shadow-sm relative overflow-hidden">
            <div className="bg-surface-container-lowest border-b border-outline-variant/30 px-4 py-3 flex items-center justify-between">
               <span className="font-headline font-bold text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4 text-tertiary" /> 
@@ -1163,7 +1245,7 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
               </span>
               {isStreaming && <div className="flex items-center gap-2 text-xs font-bold text-secondary tracking-widest uppercase"><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</div>}
            </div>
-           <div className="p-6 bg-surface-container-lowest/30">
+          <div className="p-6 bg-surface-container-lowest/30 overflow-y-auto">
               {report ? (
                  <ReactMarkdown
                    remarkPlugins={[remarkGfm]}
@@ -1171,7 +1253,7 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
                    {report}
                  </ReactMarkdown>
               ) : (
-                 <div className="w-full h-full flex flex-col items-center justify-center text-outline-variant/50">
+                <div className="w-full h-40 flex flex-col items-center justify-center text-outline-variant/50">
                     <Activity className="w-10 h-10 mb-4 opacity-20 animate-pulse" />
                     <span className="text-xs uppercase tracking-widest font-bold">Scanning Infrastructure...</span>
                  </div>
@@ -1179,19 +1261,24 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
            </div>
         </div>
 
-        {/* Area 2: 수집된 Raw 데이터 (에셋 원시 로그 데이터) */}
-        <div className="bg-surface border border-outline-variant/30 rounded-2xl flex flex-col h-auto shadow-sm relative">
+        {/* Area 2: Collected Raw Data (Asset Raw Logs) */}
+        <div className="bg-surface border border-outline-variant/30 rounded-2xl flex flex-col flex-1 shadow-sm relative overflow-hidden">
            <div className="bg-surface-container-lowest border-b border-outline-variant/30 px-4 py-3 flex items-center justify-between">
               <span className="font-headline font-bold text-sm flex items-center gap-2">
                 <FileDown className="w-4 h-4 text-secondary" />
                 Collected Raw Data (Inventory Details)
               </span>
            </div>
-           <div ref={logsContainerRef} className="p-4 bg-surface-container-lowest/30 text-[13px] text-on-surface-variant space-y-2 scroll-smooth max-h-[500px] overflow-y-auto">
+          <div ref={logsContainerRef} className="p-6 bg-surface-container-lowest/30 text-sm text-on-surface-variant space-y-2 overflow-y-auto flex-1">
               {logs.filter(log => log.type === 'inventory').map((log) => (
                 <div key={log.id} className="p-1 rounded transition-colors hover:bg-surface-container-low/50 border-b border-outline-variant/5 last:border-0 pb-2">
-                  <span className="text-secondary mr-2 font-bold shrink-0">[{log.type.toUpperCase()}]</span>
-                  <span className="whitespace-pre-wrap break-all leading-relaxed">{log.message}</span>
+                  <div className="markdown-content inventory-markdown flex-1 overflow-hidden">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={SharedMarkdownComponents}>
+                      {log.message}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               ))}
               {logs.filter(log => log.type === 'inventory').length === 0 && (
@@ -1199,9 +1286,7 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
                   <Database className="w-10 h-10 mb-3 text-secondary animate-bounce" />
                   <span className="text-sm font-black tracking-tight">Awaiting agent's inventory response data...</span>
                 </div>
-              )}
-              {logs.length === 0 && <span className="opacity-50 italic">Awaiting raw data capture...</span>}
-              <div ref={logsEndRef} />
+            )}
            </div>
         </div>
       </div>
@@ -1209,27 +1294,33 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
   );
 };
 
-interface AuditLog {
-  id: string;
-  agent: string;
-  type: string;
-  message?: string;
-  rule_id?: string;
-  status?: string;
-  reason?: string;
-  resource?: string;
-  data?: string;
-}
-
-const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: string; rules: any[]; infrastructureReport: string }) => {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
+const AuditLivePage = ({
+  projectId,
+  rules,
+  infrastructureReport,
+  logs,
+  setLogs,
+  isStreaming,
+  setIsStreaming,
+  remediationMap,
+  setRemediationMap,
+  expandedRules,
+  setExpandedRules
+}: {
+  projectId: string;
+  rules: any[];
+  infrastructureReport: string;
+  logs: AuditLog[];
+  setLogs: React.Dispatch<React.SetStateAction<AuditLog[]>>;
+  isStreaming: boolean;
+  setIsStreaming: React.Dispatch<React.SetStateAction<boolean>>;
+  remediationMap: Record<string, string>;
+  setRemediationMap: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  expandedRules: Record<string, boolean>;
+  setExpandedRules: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+}) => {
   const [activeAgent, setActiveAgent] = useState<string>('initializer');
-  const [remediationMap, setRemediationMap] = useState<Record<string, string>>({});
-  const [expandedRules, setExpandedRules] = useState<Record<string, boolean>>({});
-  const logsEndRef = useRef<HTMLDivElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
-
 
   useEffect(() => {
     if (resultsContainerRef.current) {
@@ -1237,14 +1328,13 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
     }
   }, [logs]);
 
-
   useEffect(() => {
     let isMounted = true;
     let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
     let _buffer = '';
 
     const startStream = async () => {
-      if (!projectId) return;
+      if (!projectId || logs.length > 0 || isStreaming) return;
       setIsStreaming(true);
       setLogs([{ id: 'init', agent: 'system', type: 'status', message: `Initializing audit pipeline for project: ${projectId}...` }]);
       
@@ -1332,12 +1422,45 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
       isMounted = false;
       if (reader) reader.cancel();
     };
-  }, [projectId, rules]);
+  }, [projectId, rules, infrastructureReport]);
 
-  // Derive Evaluation Results from logs
   const evalResults = logs.filter(l => l.type === 'result');
-  // Aggregate unique rules that failed or passed
-  const evaluatedRuleIds = new Set(evalResults.map(r => r.rule_id));
+
+  // 3-way Status Calculation (Matched, Mismatched, Inconclusive)
+  const consistencyMap = rules.reduce((acc, rule) => {
+    const res = evalResults.find(r => r.rule_id === rule.id);
+    const userValue = (rule as any).user_status || 'Yes'; // 'Yes' | 'No' | 'Out of Scope'
+    
+    if (userValue === 'Out of Scope') {
+      acc[rule.id] = 'Inconclusive';
+      return acc;
+    }
+
+    if (!res) {
+      acc[rule.id] = 'Inconclusive'; // 응답 대기 중
+      return acc;
+    }
+
+    // 에이전트 판단 가공
+    const agentValue = (res.status === 'PASS' || res.status === 'APPLIED') ? 'Y' : 
+                       (res.status === 'FAIL' || res.status === 'NOT_APPLIED') ? 'N' : 'Inconclusive';
+
+    // 사용자의 'Yes' 또는 'No' 를 'Y' 와 'N' 으로 매칭하여 대조
+    const userMapped = userValue === 'Yes' ? 'Y' : userValue === 'No' ? 'N' : userValue;
+
+    if (agentValue === 'Inconclusive') {
+      acc[rule.id] = 'Inconclusive';
+    } else if (userMapped === agentValue) {
+      acc[rule.id] = 'Matched';
+    } else {
+      acc[rule.id] = 'Mismatched';
+    }
+    return acc;
+  }, {} as Record<string, 'Matched' | 'Mismatched' | 'Inconclusive'>);
+
+  const matchedCount = Object.values(consistencyMap).filter(v => v === 'Matched').length;
+  const mismatchedCount = Object.values(consistencyMap).filter(v => v === 'Mismatched').length;
+  const inconclusiveCount = Object.values(consistencyMap).filter(v => v === 'Inconclusive').length;
 
   return (
     <div className="animate-fadeIn space-y-6 pb-20 h-full flex flex-col">
@@ -1346,229 +1469,261 @@ const AuditLivePage = ({ projectId, rules, infrastructureReport }: { projectId: 
         title="Checklist"
         description={(
           <p className="text-on-surface-variant text-base">
-            Monitoring multi-agent infrastructure evaluation for <span className="font-mono text-primary font-bold">{projectId}</span>
+            Evaluating GCP region and service infrastructure consistency (Matching diagnostic results) for <span className="font-mono text-primary font-bold">{projectId}</span>
           </p>
         )}
         rightElement={null}
       />
       
-      <div className="flex-1 min-h-[500px] flex flex-col gap-6">
+      <div className="flex-1 flex flex-col gap-6 overflow-hidden">
         
-        {/* Top: Security Posture Summary Dashboard */}
-        <div className="bg-surface border border-outline-variant/30 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-6 relative overflow-hidden">
-           {/* Decorative background element */}
+        {/* Top: Consistency Dashboard */}
+        <div className="bg-surface border border-outline-variant/30 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-6 relative overflow-hidden backdrop-blur-sm">
            <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
            
            <div className="relative z-10 w-full md:w-auto">
               <h3 className="font-headline font-bold text-xl text-on-surface mb-1.5 flex items-center gap-2">
-                <ShieldCheck className="w-6 h-6 text-primary" /> Security Posture Summary
+              <ShieldCheck className="w-6 h-6 text-primary" /> Evaluation Dashboard
               </h3>
-              <p className="text-sm text-on-surface-variant">Live streaming compliance evaluation</p>
+            <p className="text-sm text-on-surface-variant font-medium">Real-time infrastructure policy compliance status summary</p>
            </div>
            
-           <div className="relative z-10 flex flex-wrap md:flex-nowrap items-center gap-6 md:gap-8 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 shadow-inner min-w-[300px] justify-between">
-              <div className="flex flex-col items-start w-1/3 md:w-auto">
-                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Applied
+          <div className="relative z-10 flex flex-nowrap items-center gap-6 md:gap-14 bg-surface-container-lowest/80 p-4 px-10 rounded-2xl border border-outline-variant/30 shadow-inner justify-between">
+            <div className="flex items-center gap-14 pr-10 border-r border-outline-variant/30">
+              <div className="flex flex-col items-center">
+                <div className="text-4xl font-mono font-black text-blue-600 tracking-tighter">
+                  {matchedCount}
+                </div>
+                <span className="text-[10px] font-black text-blue-600/80 uppercase tracking-widest flex items-center gap-1 mt-1">
+                  <CheckCircle2 className="w-3 h-3" /> MATCHED
                 </span>
-                <div className="text-3xl font-mono font-black text-emerald-500 tracking-tighter">
-                  {evalResults.filter(r => r.status === 'APPLIED').length}
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="text-4xl font-mono font-black text-red-600 tracking-tighter">
+                  {mismatchedCount}
+                </div>
+                <span className="text-[10px] font-black text-red-600/80 uppercase tracking-widest flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3 h-3" /> MISMATCHED
+                </span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="text-4xl font-mono font-black text-slate-500 tracking-tighter">
+                  {inconclusiveCount}
+                </div>
+                <span className="text-[10px] font-black text-slate-500/80 uppercase tracking-widest flex items-center gap-1 mt-1">
+                  <HelpCircle className="w-3 h-3" /> INCONCLUSIVE
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-14">
+              <div className="flex flex-col items-start border-r border-outline-variant/10 pr-10">
+                <span className="text-[10px] font-black text-on-surface-variant/70 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 leading-none">
+                  <Database className="w-3.5 h-3.5 text-blue-500" /> APPLIED
+                </span>
+                <div className="text-2xl font-mono font-black text-on-surface opacity-80">
+                  {evalResults.filter(r => r.status === 'PASS' || r.status === 'APPLIED').length}
                 </div>
               </div>
-              <div className="hidden md:block w-px h-12 bg-outline-variant/30"></div>
-              <div className="flex flex-col items-start w-1/3 md:w-auto">
-                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" /> Not Applied
+
+              <div className="flex flex-col items-start leading-none">
+                <span className="text-[10px] font-black text-on-surface-variant/70 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" /> NOT APPLIED
                 </span>
-                <div className="text-3xl font-mono font-black text-red-500 tracking-tighter shadow-sm">
-                  {evalResults.filter(r => r.status === 'NOT_APPLIED').length}
+                <div className="text-2xl font-mono font-black text-on-surface opacity-80">
+                  {evalResults.filter(r => r.status === 'FAIL' || r.status === 'NOT_APPLIED').length}
                 </div>
-              </div>
-              <div className="hidden md:block w-px h-12 bg-outline-variant/30"></div>
-              <div className="flex flex-col items-start w-full mt-2 md:mt-0 md:w-auto border-t border-outline-variant/20 md:border-0 pt-2 md:pt-0">
-                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5 text-amber-500" /> Under Review
-                </span>
-                <div className="text-3xl font-mono font-black text-amber-500 tracking-tighter">
-                  {evalResults.filter(r => r.status === 'UNDER_REVIEW').length}
                 </div>
               </div>
            </div>
         </div>
 
-        {/* Main Body: Rule Finding Cards List */}
-        <div ref={resultsContainerRef} className="h-auto pb-10 space-y-4 scroll-smooth">
+        {/* List of Cards */}
+        <div ref={resultsContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar pb-10 space-y-5">
            {rules.length === 0 ? (
-             <div className="w-full h-full flex flex-col items-center justify-center text-outline-variant/60 bg-surface border border-outline-variant/20 rounded-2xl border-dashed">
+            <div className="w-full h-80 flex flex-col items-center justify-center text-outline-variant/60 bg-surface border-2 border-outline-variant/20 rounded-2xl border-dashed">
                {isStreaming ? (
-                 <><Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" /><p className="text-sm font-bold tracking-wide">Awaiting Evaluator Agent...</p></>
+                <>
+                  <Loader2 className="w-12 h-12 animate-spin mb-4 text-primary opacity-50" />
+                  <p className="text-sm font-bold tracking-tight">Evaluator Agent is analyzing resources...</p>
+                </>
                ) : (
-                 <p className="text-sm">No rules loaded for evaluation.</p>
+                  <p className="text-sm font-medium">No items to evaluate.</p>
                )}
              </div>
            ) : (
              rules.map((rule, idx) => {
-                const ruleResults = evalResults.filter(r => r.rule_id === rule.id);
-                const notApplieds = ruleResults.filter(r => r.status === 'NOT_APPLIED');
-                const applieds = ruleResults.filter(r => r.status === 'APPLIED');
-                const underReviews = ruleResults.filter(r => r.status === 'UNDER_REVIEW');
-                const isExpanded = !!expandedRules[rule.id];
-                
-                const hasNotApplied = notApplieds.length > 0;
-                const isUnderReview = underReviews.length > 0;
+               const ruleResults = evalResults.filter(r => r.rule_id === rule.id);
+               const isExpanded = !!expandedRules[rule.id];
                 const isWaiting = ruleResults.length === 0;
+               const status = consistencyMap[rule.id];
+               const userValue = (rule as any).user_status || 'Yes';
+               const userMapped = userValue === 'Yes' ? 'Y' : userValue === 'No' ? 'N' : userValue;
+
+               const displayContent = (() => {
+                 if (ruleResults.length === 0) return '';
+                 const res = ruleResults[0];
+                 const bp = extractSection(res.reason, 'Google Cloud Best Practices');
+                 const reasoning = extractSection(res.reason, 'Reasoning');
+                 const tfCode = remediationMap[rule.id]; // 테라폼 코드
+
+                 if (status === 'Matched') {
+                   if (userMapped === 'N') return bp ? `**Google Cloud Best Practices**\n\n${bp}` : '';
+                   return reasoning || res.reason;
+                 } 
+                 if (status === 'Mismatched') {
+                   const tfFormatted = tfCode ? `\n\n**Remediation Terraform**\n\`\`\`hcl\n${tfCode}\n\`\`\`` : '';
+                   if (!reasoning && !bp && !tfCode) return ""; // 백폴 소거 (공백 축약)
+                   return `${reasoning}\n\n${bp ? `**Google Cloud Best Practices**\n\n${bp}` : ''}${tfFormatted}`;
+                 }
+                 if (status === 'Inconclusive') {
+                   if (userMapped === 'Out of Scope') return bp ? `**Google Cloud Best Practices**\n\n${bp}` : '';
+                   return '';
+                 }
+                 return res.reason;
+               })();
+
+               const hasContent = displayContent.trim().length > 0;
+
+               const themeClass = isWaiting ? "border-outline-variant/20" :
+                 status === 'Matched' ? "border-emerald-500/20 bg-emerald-50/[0.03]" :
+                 status === 'Mismatched' ? "border-red-500/30 bg-red-50/[0.03]" :
+                 "border-slate-400/30 bg-slate-50/[0.03]"; // Inconclusive
 
                 return (
-                   <div key={rule.id} className={cn("bg-surface border rounded-2xl overflow-hidden transition-all duration-300 shadow-sm group", hasNotApplied ? "border-red-500/40 ring-2 ring-red-500/10 shadow-red-500/5 transform hover:-translate-y-0.5" : isUnderReview ? "border-yellow-500/40 ring-2 ring-yellow-500/10 shadow-yellow-500/5 transform hover:-translate-y-0.5" : isWaiting ? "border-outline-variant/30 opacity-70 border-dashed" : "border-outline-variant/20 hover:border-outline-variant/50")}>
-                     {/* Card Header (Always visible onClick Trigger) */}
+                  <div key={rule.id} className={cn("bg-surface border rounded-2xl overflow-hidden transition-all duration-300 shadow-sm", themeClass)}>
                      <div 
-                       className={cn("px-5 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 cursor-pointer transition-colors relative", hasNotApplied ? "bg-red-500/5 hover:bg-red-500/10" : "hover:bg-surface-container-lowest/80")}
+                      className={cn("px-6 py-5 flex flex-col md:flex-row items-center gap-10 cursor-pointer relative",
+                        status === 'Mismatched' ? "hover:bg-red-500/[0.04]" :
+                        status === 'Matched' ? "hover:bg-emerald-500/[0.04]" :
+                        "hover:bg-slate-500/[0.04]")}
                        onClick={() => setExpandedRules(p => ({...p, [rule.id]: !isExpanded}))}
                      >
-                       {/* Left: Icon & Index */}
-                       <div className="hidden md:flex flex-shrink-0 w-10 h-10 rounded-full items-center justify-center font-mono text-xs font-bold ring-4 ring-surface bg-surface-container shadow-sm mt-0.5">
-                         {isWaiting ? (
-                           <span className="text-outline-variant">{idx + 1}</span>
-                         ) : hasNotApplied ? (
-                           <AlertTriangle className="w-5 h-5 text-red-500" />
-                         ) : isUnderReview ? (
-                           <HelpCircle className="w-5 h-5 text-amber-500" />
-                         ) : (
-                           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                         )}
-                       </div>
-                       
-                       {/* Middle: Rule Identity */}
-                       <div className="flex-1 min-w-0 pr-4">
-                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                           <span className="md:hidden font-mono text-[10px] font-bold text-outline-variant mr-1">#{idx + 1}</span>
-                           <span className={cn("px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider", hasNotApplied ? "bg-red-500/20 text-red-700" : "bg-surface-container-high text-tertiary")}>{rule.type}</span>
-                           <span className="text-[11px] font-bold text-on-surface-variant bg-surface-container-lowest px-2 py-0.5 border border-outline-variant/20 rounded-full">{rule.category}</span>
-                         </div>
-                         <h4 className="text-base font-bold text-on-surface leading-snug">{rule.details}</h4>
-                       </div>
+                      {!isWaiting && (
+                        <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", 
+                          status === 'Matched' ? "bg-emerald-600" : 
+                          status === 'Mismatched' ? "bg-red-600" : 
+                          "bg-slate-400")} />
+                      )}
 
-                       {/* Right: Badges & Chevron */}
-                       <div className="w-full md:w-auto flex flex-row items-center justify-between md:justify-end shrink-0 gap-4 mt-2 md:mt-0 pt-3 md:pt-0 border-t border-outline-variant/10 md:border-t-0">
-                         {isWaiting ? (
-                           <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-tighter text-secondary bg-secondary/5 px-3 py-1.5 rounded-full border border-secondary/20 shadow-sm animate-pulse-slow">
-                              {isStreaming && <Loader2 className="w-3.5 h-3.5 animate-spin mr-0.5" />}
-                              Waiting for agent...
+                      {/* LEFT: Rule Details & Integrated Reasoning */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <span className="px-2.5 py-1 rounded-md text-[9px] uppercase font-black tracking-widest bg-surface-container-high text-tertiary shadow-sm">{rule.type}</span>
+                          <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container-lowest px-2.5 py-1 border border-outline-variant/30 rounded-full">{rule.category}</span>
+                        </div>
+                        <h4 className="text-[16px] font-bold text-on-surface tracking-tight leading-snug">{rule.details}</h4>
+
+                        {status === 'Mismatched' && !isWaiting && ruleResults[0] && (
+                          <div className="mt-3 p-3 bg-red-600/5 border border-red-500/10 rounded-xl flex items-start gap-3 animate-fadeIn">
+                            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <span className="text-[10px] font-black text-red-700 uppercase tracking-tighter block mb-0.5">Mismatched Detected</span>
+                              <p className="text-[12px] text-red-950/90 leading-relaxed font-medium">
+                                {extractSection(ruleResults[0].reason, 'Summary') || ruleResults[0].reason.split('\n').find(line => line.trim().length > 0 && !line.startsWith('Status:') && !line.startsWith('User Configuration:')) || ""}
+                              </p>
                             </div>
-                         ) : hasNotApplied ? (
-                           <div className="flex items-center gap-1.5 bg-red-500/10 text-red-700 px-3 py-1.5 rounded-full text-xs font-bold">
-                             <AlertTriangle className="w-3.5 h-3.5" />
-                             Not Applied
-                           </div>
-                         ) : isUnderReview ? (
-                           <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-700 px-3 py-1.5 rounded-full text-xs font-bold">
-                             <HelpCircle className="w-3.5 h-3.5" />
-                             Under Review
-                           </div>
-                         ) : (
-                           <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-bold">
-                             <CheckCircle2 className="w-3.5 h-3.5" />
-                             Applied
-                           </div>
-                         )}
-                         <ChevronRight className={cn("w-5 h-5 transition-transform duration-300 text-outline-variant", isExpanded && "rotate-90")} />
-                       </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* RIGHT: 3-Column Comparison Section */}
+                      <div className="flex flex-row items-center gap-8 md:gap-12 shrink-0 border-l border-outline-variant/20 pl-10">
+                        <div className="flex flex-col items-center">
+                          <span className="text-[9px] font-black text-on-surface-variant/70 uppercase tracking-widest leading-none mb-1.5">USER</span>
+                          <span className={cn("text-[11px] font-black uppercase", (userValue === 'Yes' || userValue === 'Y') ? 'text-emerald-600' : (userValue === 'No' || userValue === 'N') ? 'text-red-600' : 'text-slate-600')}>
+                            {userValue === 'Yes' ? 'Y' : userValue === 'No' ? 'N' : 'Out of Scope'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col items-center">
+                          <span className="text-[9px] font-black text-on-surface-variant/70 uppercase tracking-widest leading-none mb-1.5">AGENT</span>
+                          {isWaiting ? (
+                            <span className="text-[11px] font-black text-on-surface-variant/40 animate-pulse italic">WAITING...</span>
+                          ) : (
+                            <span className={cn("text-[11px] font-black uppercase", (ruleResults[0].status === 'PASS' || ruleResults[0].status === 'APPLIED') ? 'text-emerald-600' : (ruleResults[0].status === 'FAIL' || ruleResults[0].status === 'NOT_APPLIED') ? 'text-red-600' : 'text-slate-600')}>
+                              {(ruleResults[0].status === 'PASS' || ruleResults[0].status === 'APPLIED') ? 'Y' : 
+                               (ruleResults[0].status === 'FAIL' || ruleResults[0].status === 'NOT_APPLIED') ? 'N' : 'Inconclusive'}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-center min-w-[100px]">
+                          <span className="text-[9px] font-black text-on-surface-variant/70 uppercase tracking-widest leading-none mb-1.5">STATUS</span>
+                          {isWaiting ? (
+                            <div className="text-[10px] text-blue-600/50 flex items-center gap-1 font-black"><Loader2 className="w-3 h-3 animate-spin" /></div>
+                          ) : (
+                            <div className={cn(
+                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border",
+                              status === 'Matched' ? "bg-emerald-600 text-white border-emerald-700" : status === 'Mismatched' ? "bg-red-600 text-white border-red-700" : "bg-slate-500 text-white border-slate-600"
+                            )}>
+                              {status === 'Matched' ? <CheckCircle2 className="w-3 h-3" /> : status === 'Mismatched' ? <AlertTriangle className="w-3 h-3" /> : <HelpCircle className="w-3 h-3" />}
+                              {status}
+                            </div>
+                          )}
+                        </div>
+
+                        <ChevronRight className={cn("w-6 h-6 transition-transform duration-300 text-outline-variant", isExpanded && "rotate-90")} />
+                      </div>
                      </div>
 
-                     {/* Expanded Body (Findings & Remediation) */}
-                     <div className={cn("grid transition-[grid-template-rows] duration-300 ease-in-out", isExpanded && (ruleResults.length > 0 || remediationMap[rule.id]) ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
-                       <div className="overflow-hidden">
-                         <div className="px-5 md:px-20 pb-6 pt-3 bg-surface-container-lowest/50 border-t border-outline-variant/10">
-                           {/* Under Review Section */}
-                           {isWaiting && (
-                             <div className="mb-6 animate-slideUp bg-yellow-50/50 border border-yellow-200/50 rounded-xl p-5 relative overflow-hidden">
-                               <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-500"></div>
-                               <h5 className="text-xs font-bold text-yellow-800 uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-yellow-500/10 pb-2">
-                                 <HelpCircle className="w-4 h-4 text-yellow-500" /> Under Review
-                               </h5>
-                               <p className="text-on-surface-variant text-[13px] leading-relaxed font-medium">
-                                 주어진 프로젝트 가용 리소스 풀 및 권한 정보만으로는 규범 달성 여부를 명확히 입증하기 어려워 추가 평가가 진행 중이거나 사용자 보조 검토가 필요합니다.
-                               </p>
-                             </div>
-                           )}
+                    <div className={cn("grid transition-[grid-template-rows] duration-500 ease-in-out bg-surface-container-lowest/20", isExpanded && hasContent ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
+                      <div className="overflow-hidden">
+                        <div className="px-10 md:px-28 pb-12 pt-8 border-t border-outline-variant/10">
+                          {ruleResults.length > 0 && (
+                            <div className="mb-10 animate-slideUp">
 
-                           {/* Not Applied Findings List */}
-                           {notApplieds.length > 0 && (
-                             <div className="mb-6 animate-slideUp" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-                               <h5 className="text-xs font-bold text-red-600 uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-red-500/10 pb-2">
-                                 <AlertTriangle className="w-4 h-4" /> Not Applied Details
-                               </h5>
-                               <div className="space-y-3 pl-1">
-                                 {notApplieds.map(res => (
-                                   <div key={`not-applied-${res.id}`} className="bg-surface border border-red-500/20 shadow-sm rounded-xl p-4 relative overflow-hidden flex flex-col md:flex-row md:items-start gap-4">
-                                     <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-red-500/80"></div>
-                                     <div className="text-[10px] font-mono font-bold text-on-surface bg-surface-container border border-outline-variant/20 px-2 py-1.5 rounded-md shadow-inner shrink-0 break-all w-fit md:max-w-[200px]">
-                                       {res.resource || 'Global Project Level'}
+                              <div className="space-y-6">
+                                {ruleResults.map(res => (
+                                  displayContent ? (
+                                    <div key={`res-${res.id}`} className="markdown-content text-on-surface-variant text-[13px] leading-relaxed font-medium p-4 animate-slideUp">
+                                      <div className="hidden">
+                                        <div className="flex items-center gap-12">
+                                          <div className="flex items-center gap-2">
+                                            <div className={cn("w-2 h-2 rounded-full", (res.status === 'PASS' || res.status === 'APPLIED') ? "bg-emerald-500" : "bg-red-500 text-on-surface")}></div>
+                                            <span className="text-[11px] font-black uppercase text-on-surface/80">{res.status}</span>
+                                        </div>
+                                           <span className="text-[10px] font-bold uppercase text-on-surface-variant">Agent: {res.agent || 'Evaluator'}</span>
+                                         </div>
+                                       </div>
+                                       <div className="p-8">
+                                         <div className="markdown-content text-on-surface-variant text-[14px] leading-relaxed font-medium">
+                                           <ReactMarkdown remarkPlugins={[remarkGfm]} components={SharedMarkdownComponents}>
+                                             {displayContent}
+                                           </ReactMarkdown>
+                                         </div>
+                                       </div>
                                      </div>
-                                     <p className="text-on-surface-variant text-[13px] leading-relaxed flex-1 mt-1 md:mt-0 font-medium">
-                                       {res.reason || 'No specific reason provided.'}
-                                     </p>
-                                   </div>
-                                 ))}
-                               </div>
-                             </div>
-                           )}
-
-                           {/* Applied Findings List */}
-                           {applieds.length > 0 && (
-                             <div className="mb-6 animate-slideUp" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
-                               <h5 className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-emerald-500/10 pb-2">
-                                 <CheckCircle2 className="w-4 h-4" /> Applied Resources Details
-                               </h5>
-                               <div className="space-y-3 pl-1">
-                                 {applieds.map(res => (
-                                   <div key={`applied-${res.id}`} className="bg-surface border border-emerald-500/20 shadow-sm rounded-xl p-4 relative overflow-hidden flex flex-col md:flex-row md:items-start gap-4">
-                                     <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500/80"></div>
-                                     <div className="text-[10px] font-mono font-bold text-on-surface bg-surface-container border border-outline-variant/20 px-2 py-1.5 rounded-md shadow-inner shrink-0 break-all w-fit md:max-w-[200px]">
-                                       {res.resource || 'Global Project Level'}
-                                     </div>
-                                     <p className="text-on-surface-variant text-[13px] leading-relaxed flex-1 mt-1 md:mt-0 font-medium">
-                                       {res.reason || 'No specific reason provided.'}
-                                     </p>
-                                   </div>
-                                 ))}
-                               </div>
-                             </div>
-                           )}
-
-                           {/* Remediation Block (IaC / BP) */}
-                           {remediationMap[rule.id] && (
-                              <div className="animate-slideUp" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
-                                <div className="mt-2 bg-[#1E1E1E] border border-tertiary/40 rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/50 relative">
-                                  {/* Code Header Bar */}
-                                  <div className="bg-[#2D2D2D] px-4 py-2.5 flex items-center justify-between border-b border-[#1E1E1E] shadow-sm relative z-10">
-                                    <div className="flex items-center gap-2.5">
-                                      <div className="w-6 h-6 rounded-md bg-tertiary/20 flex items-center justify-center">
-                                        <Code className="w-3.5 h-3.5 text-tertiary" />
-                                      </div>
-                                      <h4 className="text-[11px] font-bold text-gray-200 uppercase tracking-widest text-shadow-sm">Remediation Plan & IaC Blueprint</h4>
-                                    </div>
-                                    <div className="flex gap-1.5">
-                                      <div className="w-2.5 h-2.5 rounded-full bg-[#4CAF50]/80"></div>
-                                      <div className="w-2.5 h-2.5 rounded-full bg-[#FFC107]/80"></div>
-                                      <div className="w-2.5 h-2.5 rounded-full bg-[#F44336]/80"></div>
-                                    </div>
-                                  </div>
-                                  {/* Code Content */}
-                                  <div 
-                                    className="p-5 overflow-x-auto text-[#D4D4D4] max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#444] scrollbar-track-[#1E1E1E]" 
-                                    dangerouslySetInnerHTML={{ __html: `<pre><code class="font-mono text-[12px] leading-relaxed break-words">${remediationMap[rule.id].replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>` }}
-                                  />
-                                </div>
+                                  ) : null
+                                ))}
                               </div>
-                           )}
-                         </div>
-                       </div>
+                            </div>
+                          )}
+
+                          {false && (
+                            <div className="animate-slideUp" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+                              <h5 className="text-[11px] font-black text-tertiary uppercase tracking-[0.2em] mb-5 flex items-center gap-3 border-b border-tertiary/10 pb-3">
+                                <Code className="w-5 h-5" /> Remediation Infrastructure-as-Code
+                              </h5>
+                              <div className="mt-2 bg-[#1b1c1e] border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
+                                <div className="bg-[#2a2b2e] px-8 py-4 flex items-center justify-between border-b border-white/5">
+                                  <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">TERRAFORM BLUEPRINT</span>
+                                  </div>
+                                </div>
+                                <div 
+                                  className="p-8 overflow-x-auto text-[#e1e1e6] max-h-[500px] overflow-y-auto custom-scrollbar"
+                                  dangerouslySetInnerHTML={{ __html: `<pre><code class="font-mono text-[13px] leading-relaxed break-words">${remediationMap[rule.id].replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                      </div>
                    </div>
                 );
              })
-
            )}
         </div>
       </div>
@@ -1591,13 +1746,16 @@ export default function App() {
   const [loadingMsg, setLoadingMsg] = useState<string>("Analyzing architecture...");
 
   // GCP Advisor States
-
   const [auditProjectId, setAuditProjectId] = useState<string>('');
   const [auditSaKey, setAuditSaKey] = useState<string>('');
   const [auditRules, setAuditRules] = useState<any[]>([]);
   const [infrastructureReport, setInfrastructureReport] = useState<string>('');
 
-
+  // Persistent Audit Live State
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditIsStreaming, setAuditIsStreaming] = useState<boolean>(false);
+  const [auditRemediationMap, setAuditRemediationMap] = useState<Record<string, string>>({});
+  const [auditExpandedRules, setAuditExpandedRules] = useState<Record<string, boolean>>({});
 
   const handleStartAudit = (projectId: string, saKey: string, rules: any[]) => {
       setAuditProjectId(projectId);
@@ -1611,6 +1769,12 @@ export default function App() {
 
   const handleAnalysisComplete = (report: string) => {
       setInfrastructureReport(report);
+    // Reset Audit persistence for new session
+    setAuditLogs([]);
+    setAuditIsStreaming(false);
+    setAuditRemediationMap({});
+    setAuditExpandedRules({});
+
       setLoadingMsg("✅ Approval complete. Launching Evaluator & Remediator Agents...");
       setIsLoading(true);
       setTimeout(() => {
@@ -1764,7 +1928,7 @@ export default function App() {
             const lines = segment.split("\n");
             let header = lines[0].trim().replace("[", "").replace("]", "");
 
-            // 파서: '📝' 기호가 있거나 'Terraform Architecture Analysis' 헤더가 있으면 리포트로 취급
+            // Parser: If '📝' symbol or 'Terraform Architecture Analysis' header exists, treat as report
             if (header.includes("📝") || header.toLowerCase().includes("analysis")) {
                tfReportStr = lines.slice(1).join("\n").trim();
                continue;
@@ -1801,8 +1965,6 @@ export default function App() {
           }
 
           if (!navigated && (cleanText.includes("### 📊") || cleanText.includes("### 🌐") || hasChecklistData)) {
-            // let displayReport = cleanText;
-            // 🛡️ [수정] JSON 블록도 화면에 보이도록 자르기 로직(substring)을 제거했습니다.
             setAnalysisReport(cleanText);
             setActivePage('analysis');
           }
@@ -1821,30 +1983,30 @@ export default function App() {
       <div className="flex-1 overflow-x-hidden overflow-y-auto relative blueprint-grid">
         <main className="min-h-full flex flex-col relative">
           <div className="flex-1">
-          <div className="p-6 md:p-8 lg:p-12 max-w-7xl w-full mx-auto">
-            <AnimatePresence>
+          <div className="p-6 md:p-8 lg:p-12 max-w-[1600px] w-full mx-auto">
+              <AnimatePresence mode="wait">
               <motion.div key={activePage} initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.2, ease: 'easeOut' }}>
                 {activePage === 'upload' && <UploadPage onAnalyze={(d, m, f) => { setLoadingMsg("🔍 Analyzing AWS infrastructure architecture..."); handleRunAgent(d, m, f, "aws_analyzer"); }} isLoading={isLoading} />}
                 {activePage === 'analysis' && <AnalysisPage report={analysisReport} checklistItems={checklist} awaitingApproval={awaitingApproval} onConfirm={() => {
                   try {
                     const safeChecklist = Array.isArray(checklist) ? JSON.stringify(checklist) : "[]";
-                    handleRunAgent(`다음 AWS 아키텍처 분석 결과를 바탕으로 GCP 리소스로 매핑(번역)해 주세요.\n\n${analysisReport}\n\n${safeChecklist}`, null, null, "gcp_translator");
+                    handleRunAgent(`Please map (translate) the following AWS architecture analysis results to GCP resources.\n\n${analysisReport}\n\n${safeChecklist}`, null, null, "gcp_translator");
                   } catch (e) {
-                    handleRunAgent(`다음 AWS 아키텍처 분석 결과를 바탕으로 GCP 리소스로 매핑(번역)해 주세요.\n\n${analysisReport}`, null, null, "gcp_translator");
+                    handleRunAgent(`Please map (translate) the following AWS architecture analysis results to GCP resources.\n\n${analysisReport}`, null, null, "gcp_translator");
                   }
                 }} onFeedback={(text) => handleRunAgent(text, null, null, "aws_analyzer")} isLoading={isLoading} setLoadingMsg={setLoadingMsg} />}
                 {activePage === 'mapping' && <MappingPage mappings={mappings} report={mappingReport} onConfirm={() => {
                   try {
                     const safeMappings = Array.isArray(mappings) ? JSON.stringify(mappings) : "[]";
-                    const generatorPrompt = `다음은 AWS에서 GCP로 마이그레이션하기 위한 종합 아키텍처 데이터입니다. 이 데이터를 완벽하게 분석하여 Production-Ready 수준의 엔터프라이즈 GCP Terraform 코드를 생성해 주세요.
+                    const generatorPrompt = `The following is comprehensive architecture data for migrating from AWS to GCP. Please analyze this data thoroughly and generate production-ready enterprise GCP Terraform code.
 
---- [1. 원본 아키텍처 스펙 및 분석 데이터 (System Integration Data)] ---
+--- [1. Original Architecture Specs & Analysis Data (System Integration Data)] ---
 ${analysisReport}
 
---- [2. GCP 네이티브 아키텍처 최적화 설계 가이드] ---
+--- [2. GCP-Native Architecture Optimization Design Guide] ---
 ${mappingReport}
 
---- [3. 리소스 1:1 매핑 변환표] ---
+--- [3. Resource 1:1 Mapping Transformation Table] ---
 ${safeMappings}`;
 
                     handleRunAgent(generatorPrompt, null, null, "tf_generator");
@@ -1854,7 +2016,21 @@ ${safeMappings}`;
                 {activePage === 'terraform' && <TerraformPage files={terraformFiles} report={terraformReport} />}
                 {activePage === 'audit_setup' && <AuditSetupPage onStartAudit={handleStartAudit} />}
                 {activePage === 'audit_report' && <AuditReportPage projectId={auditProjectId} saKey={auditSaKey} existingReport={infrastructureReport} onProceed={handleAnalysisComplete} isLoading={isLoading} setIsLoading={setIsLoading} />}
-                {activePage === 'audit_live' && <AuditLivePage projectId={auditProjectId} rules={auditRules} infrastructureReport={infrastructureReport} />}
+                  {activePage === 'audit_live' && (
+                    <AuditLivePage
+                      projectId={auditProjectId}
+                      rules={auditRules}
+                      infrastructureReport={infrastructureReport}
+                      logs={auditLogs}
+                      setLogs={setAuditLogs}
+                      isStreaming={auditIsStreaming}
+                      setIsStreaming={setAuditIsStreaming}
+                      remediationMap={auditRemediationMap}
+                      setRemediationMap={setAuditRemediationMap}
+                      expandedRules={auditExpandedRules}
+                      setExpandedRules={setAuditExpandedRules}
+                    />
+                  )}
               </motion.div>
             </AnimatePresence>
             {isLoading && (
