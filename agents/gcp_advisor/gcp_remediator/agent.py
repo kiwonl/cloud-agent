@@ -19,5 +19,4 @@ root_agent = Agent(
     instruction=load_prompt("gcp_remediator.txt"),
     before_model_callback=log_query_to_model,
     after_model_callback=log_model_response,
-    tools=[] # Pure reasoning and code generation agent
 )

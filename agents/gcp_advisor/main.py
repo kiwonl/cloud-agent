@@ -1,4 +1,5 @@
 import asyncio
+import csv
 import json
 import logging
 import os
@@ -199,6 +200,33 @@ async def audit_analyze(req: AnalyzeRequest):
 async def audit_evaluate(req: EvaluateRequest):
     return StreamingResponse(stream_evaluate(req), media_type="text/event-stream")
 
+
+
+@router.get("/api/v1/checklist")
+def get_checklist():
+    csv_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "checklist.csv")
+    csv_file_path = os.path.normpath(csv_file_path)
+    
+    if not os.path.exists(csv_file_path):
+        logger.error(f"CSV file not found at {csv_file_path}")
+        return []
+        
+    checklist_data = []
+    try:
+        with open(csv_file_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            for idx, row in enumerate(reader):
+                if len(row) >= 3:
+                    checklist_data.append({
+                        "id": f"rule_{idx + 1}",
+                        "type": row[0].strip(),
+                        "category": row[1].strip(),
+                        "details": row[2].strip()
+                    })
+    except Exception as e:
+        logger.error(f"Failed to read CSV checklist: {e}")
+        return []
+    return checklist_data
 
 
 @router.get("/health")

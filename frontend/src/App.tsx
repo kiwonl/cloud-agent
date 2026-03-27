@@ -41,6 +41,8 @@ import {
   Loader2,
   Server,
   Activity,
+  Compass,
+  Navigation,
   Terminal as TerminalIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -101,18 +103,18 @@ const TopBar = ({ activePage, onPageChange, appMode, onModeChange }: { activePag
   const currentItems = appMode === 'migration' ? migrationItems : advisorItems;
 
   return (
-    <header className="h-[72px] bg-[#0b1437]/95 backdrop-blur-md border-b border-blue-900/30 flex items-center justify-between px-6 shrink-0 z-50 sticky top-0 overflow-x-auto whitespace-nowrap scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+    <header className="h-[88px] bg-[#0b1437]/95 backdrop-blur-md border-b border-blue-900/30 flex items-center justify-between px-6 shrink-0 z-50 sticky top-0 overflow-x-auto whitespace-nowrap scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
       <div className="flex items-center gap-4 lg:gap-4 min-w-max">
         
         {/* LOGO */}
         <div className="flex items-center gap-3 pr-4 lg:pr-4 border-r border-blue-900/30 pointer-events-none select-none">
-          <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-400 shadow-lg text-white">
-             <Bot className="w-5 h-5" />
+          <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 via-cyan-500 to-teal-400 shadow-[0_4px_20px_rgba(6,182,212,0.4)] text-white hover:scale-105 active:scale-95 transition-all duration-300">
+            <Navigation className="w-6 h-6" />
           </div>
           <div className="flex flex-col items-start leading-tight">
-            <h1 className="font-headline text-lg tracking-tight text-white flex gap-1.5 items-center">
-              <span className="font-black">Google Cloud</span>
-              <span className="font-extrabold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded text-[10.5px] uppercase tracking-widest border border-blue-500/20">AI Agent</span>
+            <h1 className="font-headline text-xl tracking-tight text-white flex gap-2 items-center">
+              <span className="font-black">Google Cloud <span className="font-extrabold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Navigator</span></span>
+              <span className="font-bold text-fuchsia-100 bg-fuchsia-500/10 px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider border border-fuchsia-500/30 backdrop-blur-sm shadow-[0_0_10px_rgba(217,70,239,0.15)]">by Agent</span>
             </h1>
           </div>
         </div>
@@ -121,14 +123,16 @@ const TopBar = ({ activePage, onPageChange, appMode, onModeChange }: { activePag
         <div className="flex items-center gap-2">
           <button 
             onClick={() => { onModeChange('gcp_advisor'); onPageChange('audit_setup'); }}
-            className={cn("px-4 py-2 rounded-md font-bold text-sm transition-all duration-300", appMode === 'gcp_advisor' ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white")}
+            className={cn("px-4 py-2.5 rounded-md font-bold text-base transition-all duration-300 flex items-center gap-2", appMode === 'gcp_advisor' ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white")}
           >
+            <ShieldCheck className="w-4 h-4" />
             Google Cloud Advisor
           </button>
           <button 
             onClick={() => { onModeChange('migration'); onPageChange('upload'); }}
-            className={cn("px-4 py-2 rounded-md font-bold text-sm transition-all duration-300", appMode === 'migration' ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white")}
+            className={cn("px-4 py-2.5 rounded-md font-bold text-base transition-all duration-300 flex items-center gap-2", appMode === 'migration' ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white")}
           >
+            <Rocket className="w-4 h-4" />
             AWS Migration
           </button>
         </div>
@@ -143,7 +147,7 @@ const TopBar = ({ activePage, onPageChange, appMode, onModeChange }: { activePag
               <button
                 onClick={() => onPageChange(item.id)}
                 className={cn(
-                  "relative h-[72px] px-3 lg:px-4 font-bold text-sm transition-all duration-300 flex items-center gap-2 group shrink-0",
+                  "relative h-[88px] px-3 lg:px-4 font-bold text-base transition-all duration-300 flex items-center gap-2 group shrink-0",
                   activePage === item.id 
                     ? "text-blue-400" 
                     : "text-slate-400 hover:text-white"
@@ -312,7 +316,7 @@ const UploadPage = ({ onAnalyze, isLoading }: { onAnalyze: (desc: string, metada
             )}
           >
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5" />}
-            {isLoading ? "Starting..." : "Start Analysis (Agent 1)"}
+            {isLoading ? "Starting..." : "Start Analysis"}
           </button>
         )}
       />
@@ -792,44 +796,8 @@ const TerraformPage = ({ files, report }: { files: { [filename: string]: string 
   );
 };
 
-const CHECKLIST_DATA = [
-  { type: '아키텍처', category: 'Multi Region 아키텍쳐 구성', details: 'Multi Region 아키텍쳐가 필요한 서비스인가?' },
-  { type: '아키텍처', category: 'Multi Region 아키텍쳐 구성', details: 'Multi Region 아키텍쳐가 필요한 수준의 사용자가 예상되는 서비스인가?' },
-  { type: '아키텍처', category: 'Multi Region 아키텍쳐 구성', details: 'Multi Region 아키텍쳐 설계(구현)를 어떻게 할 것인가?' },
-  { type: '아키텍처', category: 'Multi Region 아키텍쳐 구성', details: '고성능 Routing 기능을 사용 하였는가?' },
-  { type: '아키텍처', category: 'Multi Region 아키텍쳐 구성', details: 'Multi Region 데이터 동기화를 고려 하였는가?' },
-  { type: '아키텍처', category: 'Multi Region 아키텍쳐 구성', details: 'IaC(Infrastructure as Code)로 설계(개발)하여 최소 시간에 생성(복구)할 수 있는가?' },
-  { type: '아키텍처', category: '인스턴스 Type', details: '서비스 성격에 적합한 인스턴스 Type을 선택 하였는가?' },
-  { type: '아키텍처', category: '인스턴스 Type', details: '서비스 성격에 적합한 스토리지 Type을 선택 하였는가?' },
-  { type: '아키텍처', category: '인스턴스 Type', details: '인스턴스/스토리지 성능 측정(평가)을 진행 하였는가?' },
-  { type: '아키텍처', category: '인스턴스 Type', details: '인스턴스/스토리지 모니터링을 구축 하였는가?' },
-  { type: '아키텍처', category: 'Multi AZ 인스턴스 구성', details: 'Multi AZ(Availability Zone) 기반으로 HA(High Availability, 고가용성) 구성이 되어 있는가?' },
-  { type: '아키텍처', category: 'VPC', details: 'Public Cloud 환경에서 VPC(Virtual Private Cloud)를 구성하였는가? (AWS/GCP : VPC , Azure : Vnet)' },
-  { type: '아키텍처', category: 'VPC', details: 'VPC에서 Public/Private Subnet을 기능별로 분리하여 네트워크를 구성하였는가?' },
-  { type: '아키텍처', category: 'Auto Scaling 구성', details: '서비스 배포를 Auto Scaling 기반으로 구성하였는가?' },
-  { type: '아키텍처', category: 'Auto Scaling 구성', details: '어플리케이션 로드(CPU, Memory 등)를 고려하여 적절한 Auto Scaling Policy 가 적용 되었는가?' },
-  { type: '아키텍처', category: 'Capacity Plan', details: '서비스 사용자수에 맞추어 Architecture가 설계되어 있는가?' },
-  { type: '아키텍처', category: 'Capacity Plan', details: '서비스 생애주기/중요이벤트에 맞추어 서버 Capacity Plan이 산정되어 있는가?' },
-  { type: '아키텍처', category: 'Immutable Infrastructure', details: '서버관리자가 운영중인 서버에 접근할 필요가 없도록 구성하였는가?' },
-  { type: '아키텍처', category: 'Immutable Infrastructure', details: 'Machine Image / container image를 이용하여 배포를 수행하는가?' },
-  { type: '아키텍처', category: 'Immutable Infrastructure', details: '중앙 집중된 Logging, Monitoring 시스템을 활용하는가?' },
-  { type: '아키텍처', category: 'Immutable Infrastructure', details: 'MSA 적용이 필요/적합한 서비스인가?' },
-  { type: '아키텍처', category: 'Immutable Infrastructure', details: '각 마이크로 서비스의 통신 내역을 추적하는 방법 또는 도구가 존재하는가?' },
-  { type: '아키텍처', category: 'Immutable Infrastructure', details: '일부 마이크로 서비스의 장애에도 전체 서비스는 유지할 수 있도록 설계가 되어 있는가?' },
-  { type: '아키텍처', category: 'Immutable Infrastructure', details: '서비스 디스커버리가 적용되어 있는가?' },
-  { type: '아키텍처', category: 'Immutable Infrastructure', details: '각 api로 routing할 수 있는 적절한 component를 구성하였는가? (ex. api gateway, kubernetes ingress controller)' },
-  { type: '아키텍처', category: 'Immutable Infrastructure', details: '적절한 오케스트레이션 툴이 적용되었는가? (ex. kubernetes)' },
-  { type: '아키텍처', category: 'HA아키텍쳐', details: 'HA 구성 시 Multi AZ 가 고려되었는가?' },
-  { type: '아키텍처', category: 'HA아키텍쳐', details: 'SPOF(Single Point of Failure) 가 없는가?' },
-  { type: '아키텍처', category: 'HA아키텍쳐', details: '트래픽 급증에 대비한 인프라가 설정되어 있는가? (Autoscaling, Queue)' },
-  { type: '아키텍처', category: 'HA아키텍쳐', details: '트래픽 급증에 대비한 인프라가 설정되어 있는가? (Autoscaling, Queue)' },
-  { type: '아키텍처', category: 'HA아키텍쳐', details: '트래픽 급증에 대비한 인프라가 설정되어 있는가? (Autoscaling, Queue)' },
-  { type: '아키텍처', category: 'DR아키텍쳐', details: 'RTO / RPO 가 적절히 수립되었는가?' },
-  { type: '아키텍처', category: 'DR아키텍쳐', details: 'DR 전략 수립이 되었는가?' },
-  { type: '아키텍처', category: 'Kubernetes', details: 'Public Cloud 의 Kubernetes cluster 구성 시 서비스 VPC 내 Multi cluster 형태로 구성하였는가?' },
-  { type: '아키텍처', category: 'Kubernetes', details: 'GKE cluster 의 자동 확장은 적용해서 구축했는가?' },
-  { type: '아키텍처', category: 'Kubernetes', details: '특정한 패턴을 갖는 Spike traffic 은 KEDA Scaler를 활용하여 구축하였는가?' }
-].map((item, idx) => ({ id: `rule_${idx + 1}`, ...item }));
+// Checklist data is now loaded dynamically from backend API (/api/v1/checklist)
+const CHECKLIST_DATA: any[] = [];
 
 const extractSection = (text: string, title: string): string => {
   if (!text) return "";
@@ -878,7 +846,7 @@ const CommandBlock = ({ command }: { command: string }) => {
   };
   return (
     <div className="relative group rounded bg-[#1e2124] border border-outline-variant/10 overflow-hidden mb-3 font-mono text-[11px]">
-      <div className="p-3 pr-12 overflow-x-auto whitespace-pre text-[#A9B1D6]">
+      <div className="p-3 pr-12 overflow-x-auto overflow-y-auto max-h-[350px] whitespace-pre text-[#A9B1D6]">
         {command}
       </div>
       <div className="absolute top-0 right-0 h-full flex items-center pr-2">
@@ -893,13 +861,22 @@ const CommandBlock = ({ command }: { command: string }) => {
 const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, saKey: string, selectedRules: any[]) => void }) => {
   const [projectId, setProjectId] = useState('');
   const [saKey, setSaKey] = useState('');
-  const [ruleStatuses, setRuleStatuses] = useState<Record<string, string>>(() => {
-    const initial: Record<string, string> = {};
-    CHECKLIST_DATA.forEach((r, idx) => {
-      initial[r.id] = idx % 3 === 0 ? 'Yes' : idx % 3 === 1 ? 'No' : 'Out of Scope';
-    });
-    return initial;
-  });
+  const [checklistRules, setChecklistRules] = useState<any[]>([]);
+  const [ruleStatuses, setRuleStatuses] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch('http://localhost:8000/api/v1/checklist')
+      .then(res => res.json())
+      .then(data => {
+        setChecklistRules(data);
+        const initial: Record<string, string> = {};
+        data.forEach((r: any, idx: number) => {
+          initial[r.id] = idx % 3 === 0 ? 'Yes' : idx % 3 === 1 ? 'No' : 'Out of Scope';
+        });
+        setRuleStatuses(initial);
+      })
+      .catch(err => console.error("Failed to load checklist:", err));
+  }, []);
 
   const handleStatusChange = (id: string, status: string) => {
     setRuleStatuses(prev => ({ ...prev, [id]: status }));
@@ -912,14 +889,14 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
         title="Configuration"
         description={<p className="text-on-surface-variant text-base">Configure target environment and review checklist rules prior to the AI Audit.</p>}
         rightElement={(() => {
-          const isAllChecked = CHECKLIST_DATA.every(r => ruleStatuses[r.id] === 'Yes' || ruleStatuses[r.id] === 'No' || ruleStatuses[r.id] === 'Out of Scope');
+          const isAllChecked = checklistRules.length > 0 && checklistRules.every(r => ruleStatuses[r.id] === 'Yes' || ruleStatuses[r.id] === 'No' || ruleStatuses[r.id] === 'Out of Scope');
           return (
             <button 
               disabled={!isAllChecked}
               onClick={() => {
                 if (!projectId.trim()) { alert('Please enter a GCP Project ID'); return; }
                 if (!saKey.trim()) { alert('Please enter the Service Account JSON Key'); return; }
-                const enrichedRules = CHECKLIST_DATA.map(r => ({
+                const enrichedRules = checklistRules.map(r => ({
                    ...r,
                    user_status: ruleStatuses[r.id]
                 }));
@@ -933,7 +910,7 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
               )}
             >
               <Rocket className="w-5 h-5" />
-              Start Analysis (Agent 1)
+              Start Analysis
             </button>
           );
         })()}
@@ -963,8 +940,49 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
                   className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
                 />
               </div>
+
+              <div className="mt-2">
+                <div className="flex items-center gap-2 mb-4">
+                  <TerminalIcon className="w-4 h-4 text-on-surface-variant" />
+                  <h4 className="text-sm font-bold text-on-surface">GCP Required Commands</h4>
+                </div>
+                
+                <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                  Copy and run the command below to create a service account, grant the Viewer role, and print the generated JSON key format right away.
+                </p>
+                <CommandBlock command={`# 1. Cloud Asset Inventory API 활성화
+# 프로젝트 내 모든 리소스의 메타데이터를 조회하기 위해 필요한 API를 켭니다.
+gcloud services enable cloudasset.googleapis.com \\
+  --project=${projectId || 'PROJECT_ID'} && \\
+
+# 2. 분석 전용 서비스 계정(Service Account) 생성
+# 'ai-auditor'라는 이름의 계정을 생성하여, 개인 계정이 아닌 봇 계정으로 안전하게 접근합니다.
+gcloud iam service-accounts create ai-auditor \\
+  --display-name="AI Auditor" && \\
+
+# 3. 기본 조회 권한(Viewer) 부여
+# 프로젝트 내 대부분의 리소스 설정을 읽을 수 있는 권한을 서비스 계정에 할당합니다.
+gcloud projects add-iam-policy-binding ${projectId || 'PROJECT_ID'} \\
+  --member="serviceAccount:ai-auditor@${projectId || 'PROJECT_ID'}.iam.gserviceaccount.com" \\
+  --role="roles/viewer" && \\
+
+# 4. Cloud Asset 조회 권한(Cloud Asset Viewer) 부여
+# Asset Inventory를 통해 리소스의 전체 목록과 히스토리를 쿼리할 수 있는 특수 권한을 추가합니다.
+gcloud projects add-iam-policy-binding ${projectId || 'PROJECT_ID'} \\
+  --member="serviceAccount:ai-auditor@${projectId || 'PROJECT_ID'}.iam.gserviceaccount.com" \\
+  --role="roles/cloudasset.viewer" && \\
+
+# 5. 서비스 계정 인증 키(JSON) 생성
+# 외부 애플리케이션이나 스크립트에서 이 서비스 계정으로 로그인할 수 있도록 물리적인 키 파일을 만듭니다.
+gcloud iam service-accounts keys create sa-key.json \\
+  --iam-account=ai-auditor@${projectId || 'PROJECT_ID'}.iam.gserviceaccount.com && \\
+
+# 6. 생성된 키 내용 확인
+# 생성된 JSON 키 파일의 내용을 터미널에 출력합니다 (보통 이 내용을 복사하여 환경 변수 등에 설정합니다).
+cat sa-key.json`} />
+              </div>
               
-              <div>
+              <div className="mt-2">
                 <label className="block text-sm font-bold text-on-surface mb-2">Service Account JSON Key</label>
                 <textarea 
                   placeholder='{\n  "type": "service_account",\n  "project_id": "...",\n  ...' 
@@ -976,18 +994,6 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
                   }}
                   className="w-full min-h-[180px] bg-surface-container-low border border-outline-variant/40 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono whitespace-pre resize-none overflow-hidden"
                 />
-              </div>
-
-              <div className="mt-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <TerminalIcon className="w-4 h-4 text-on-surface-variant" />
-                  <h4 className="text-sm font-bold text-on-surface">GCP Required Commands</h4>
-                </div>
-                
-                <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
-                  Copy and run the command below to create a service account, grant the Viewer role, and print the generated JSON key format right away.
-                </p>
-                <CommandBlock command={`gcloud services enable cloudasset.googleapis.com \\\n  --project=${projectId || 'PROJECT_ID'} && \\\ngcloud iam service-accounts create ai-auditor \\\n  --display-name="AI Auditor" && \\\ngcloud projects add-iam-policy-binding ${projectId || 'PROJECT_ID'} \\\n  --member="serviceAccount:ai-auditor@${projectId || 'PROJECT_ID'}.iam.gserviceaccount.com" \\\n  --role="roles/viewer" && \\\ngcloud projects add-iam-policy-binding ${projectId || 'PROJECT_ID'} \\\n  --member="serviceAccount:ai-auditor@${projectId || 'PROJECT_ID'}.iam.gserviceaccount.com" \\\n  --role="roles/cloudasset.viewer" && \\\ngcloud iam service-accounts keys create sa-key.json \\\n  --iam-account=ai-auditor@${projectId || 'PROJECT_ID'}.iam.gserviceaccount.com && \\\ncat sa-key.json`} />
               </div>
             </div>
           </section>
@@ -1011,25 +1017,25 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 bg-surface z-10">
                 <tr className="border-b border-outline-variant/30 shadow-sm">
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-16 text-center">No.</th>
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-24">Type</th>
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-48">Category</th>
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant">Details</th>
-                  <th className="py-3 px-4 text-[11px] font-bold text-on-surface-variant w-48 text-center">Status</th>
+                  <th className="py-2 px-4 text-xs font-bold text-on-surface-variant w-16 text-center">No.</th>
+                  <th className="py-2 px-4 text-xs font-bold text-on-surface-variant w-24">Type</th>
+                  <th className="py-2 px-4 text-xs font-bold text-on-surface-variant w-48">Category</th>
+                  <th className="py-2 px-4 text-xs font-bold text-on-surface-variant">Details</th>
+                  <th className="py-2 px-4 text-xs font-bold text-on-surface-variant w-48 text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/10 text-on-surface">
-                {CHECKLIST_DATA.map((rule, idx) => (
+                {checklistRules.map((rule, idx) => (
                   <tr key={rule.id} className="hover:bg-surface-container-lowest/50 transition-colors">
-                    <td className="py-3 px-4 text-xs font-mono text-on-surface-variant text-center">{idx + 1}</td>
-                    <td className="py-3 px-4 text-xs font-bold text-on-surface-variant">
-                      <span className="bg-surface-container px-2 py-0.5 rounded text-[10px] text-tertiary">
+                    <td className="py-1.5 px-4 text-sm font-mono text-on-surface-variant text-center">{idx + 1}</td>
+                    <td className="py-1.5 px-4 text-sm font-bold text-on-surface-variant">
+                      <span className="bg-surface-container px-2 py-0.5 rounded text-xs text-tertiary">
                         {rule.type}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-xs font-bold text-on-surface">{rule.category}</td>
-                    <td className="py-3 px-4 text-xs text-on-surface-variant leading-relaxed">{rule.details}</td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-1.5 px-4 text-sm font-bold text-on-surface">{rule.category}</td>
+                    <td className="py-1.5 px-4 text-sm text-on-surface-variant leading-relaxed">{rule.details}</td>
+                    <td className="py-1.5 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5 min-w-[120px]">
                         <button
                           type="button"

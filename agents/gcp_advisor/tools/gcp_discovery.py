@@ -90,12 +90,48 @@ def scan_gcp_infrastructure(project_id: str) -> str:
             # Depending on resource type, extract key properties from the un-typed `additional_attributes`
             if resource.additional_attributes:
                 for k, v in resource.additional_attributes.items():
-                    # Just grab raw values for the LLM to process
-                    # In real code we could map strictly, but letting LLM read raw generic config is powerful
                     try:
                         resource_info[k] = v.get("value", None)
                     except AttributeError:
                         resource_info[k] = str(v)
+
+            # [Hybrid Scan - Generalized Mapping for All Key Resources]
+            # Use dynamic describe map to get granular settings for key resources
+            GCLOUD_DESCRIBE_MAP = {
+                "Instance": "gcloud compute instances describe {name} --project={project} --zone={location} --format=json",
+                "Network": "gcloud compute networks describe {name} --project={project} --format=json",
+                "Subnetwork": "gcloud compute networks subnets describe {name} --project={project} --region={location} --format=json",
+                "Bucket": "gcloud storage buckets describe gs://{name} --format=json",
+                "Cluster": "gcloud container clusters describe {name} --project={project} --zone={location} --format=json",
+                "SQLInstance": "gcloud sql instances describe {name} --project={project} --format=json",
+                "Service": "gcloud run services describe {name} --project={project} --region={location} --format=json"
+            }
+
+            if asset_type in GCLOUD_DESCRIBE_MAP:
+                try:
+                    import subprocess
+                    cmd_template = GCLOUD_DESCRIBE_MAP[asset_type]
+                    cmd = cmd_template.format(name=resource_info['name'], project=project_id, location=resource.location)
+                    res = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=5)
+                    
+                    if res.returncode == 0:
+                        detailed_json = json.loads(res.stdout)
+                        # We dump the whole detailed JSON to ensure ZERO detail loss!
+                        resource_info["raw_detailed_config"] = detailed_json
+                        
+                        # [Backwards Compatibility for Instance Specific Fields]
+                        if asset_type == "Instance":
+                            resource_info["machineType"] = detailed_json.get("machineType", "").split('/')[-1]
+                            resource_info["disks"] = [
+                                {
+                                    "deviceName": d.get("deviceName"),
+                                    "diskType": d.get("type", "").split('/')[-1] if d.get("type") else "Unknown",
+                                    "diskSizeGb": d.get("diskSizeGb"),
+                                    "boot": d.get("boot", False)
+                                } for d in detailed_json.get("disks", [])
+                            ]
+                except Exception as ex:
+                    logger.warning(f"Failed to fetch deeper details for {asset_type} {resource_info['name']}: {ex}")
 
             aggregated_report["resources"][asset_type].append(resource_info)
             
