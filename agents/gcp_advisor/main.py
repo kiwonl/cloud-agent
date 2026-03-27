@@ -147,8 +147,14 @@ async def stream_evaluate(req: EvaluateRequest):
                 rule_text = json.dumps(item, ensure_ascii=False)
                 
                 eval_prompt = (
-                    f"Target Project: {req.project_id}\n"
-                    f"Checklist Item Rule:\n{rule_text}\n"
+                    f"You are a Cloud Infrastructure Evaluator Agent.\n"
+                    f"Evaluation Target Project: {req.project_id}\n"
+                    f"Checklist Item Rule (JSON):\n{rule_text}\n"
+                    f"\n[⚠️ IMPORTANT INSTRUCTION]\n"
+                    f"The user has specified their status/requirement as: '{item.get('user_status', 'Yes')}'.\n"
+                    f"- If the status is 'No' or 'Out of Scope', it means the user has EXPLICITLY decided NOT to apply this rule or it is not applicable for this project. Please RESPECT this decision!\n"
+                    f"- If the user says 'No', DO NOT mark it as a violation or FAIL just because it deviates from standard best practices. Treat it as N/A or PASS.\n"
+                    f"- Write your reasoning in Korean.\n\n"
                     f"---\n"
                     f"Infrastructure Report:\n{req.infrastructure_report}\n"
                     f"(IMPORTANT: Your output Reasoning MUST be written in Korean! 모든 답변은 반드시 한국어로 상세히 작성하세요.)\n"
@@ -236,7 +242,9 @@ def get_checklist():
                         "id": f"rule_{idx + 1}",
                         "type": row[0].strip(),
                         "category": row[1].strip(),
-                        "details": row[2].strip()
+                        "details": row[2].strip(),
+                        "visible": row[3].strip() if len(row) > 3 else "Y",
+                        "default_value": row[4].strip() if len(row) > 4 else "Y"
                     })
     except Exception as e:
         logger.error(f"Failed to read CSV checklist: {e}")

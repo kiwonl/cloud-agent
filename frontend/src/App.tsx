@@ -57,9 +57,9 @@ const SharedMarkdownComponents = {
   h2: ({ node, ...props }: any) => <h2 className="text-xl font-headline font-bold text-on-surface mt-8 mb-3 pb-2 border-b border-outline-variant/30" {...props} />,
   h3: ({ node, ...props }: any) => <h3 className="text-lg font-headline font-semibold text-on-surface mt-6 mb-2" {...props} />,
   h4: ({ node, ...props }: any) => <h4 className="text-base font-headline font-medium text-on-surface mt-4 mb-2" {...props} />,
-  p: ({ node, ...props }: any) => <p className="text-on-surface-variant leading-relaxed mb-4 text-sm" {...props} />,
-  ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
-  ol: ({ node, ...props }: any) => <ol className="list-decimal pl-5 mb-4 space-y-2 text-sm text-on-surface-variant" {...props} />,
+  p: ({ node, ...props }: any) => <p className="text-on-surface-variant leading-relaxed mb-4 text-base" {...props} />,
+  ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 mb-4 space-y-2 text-base text-on-surface-variant" {...props} />,
+  ol: ({ node, ...props }: any) => <ol className="list-decimal pl-5 mb-4 space-y-2 text-base text-on-surface-variant" {...props} />,
   li: ({ node, ...props }: any) => <li className="pl-1 leading-relaxed" {...props} />,
   strong: ({ node, ...props }: any) => <strong className="font-bold text-primary/90" {...props} />,
   table: ({ node, ...props }: any) => <div className="overflow-x-auto my-6"><table className="w-full border-collapse border border-outline-variant/20 rounded-lg text-sm" {...props} /></div>,
@@ -799,6 +799,8 @@ const TerraformPage = ({ files, report }: { files: { [filename: string]: string 
 // Checklist data is now loaded dynamically from backend API (/api/v1/checklist)
 const CHECKLIST_DATA: any[] = [];
 
+
+
 const extractSection = (text: string, title: string): string => {
   if (!text) return "";
   const lines = text.split('\n');
@@ -858,6 +860,38 @@ const CommandBlock = ({ command }: { command: string }) => {
   );
 };
 
+const TerraformCodeBlock = ({ className, children, ...props }: any) => {
+  const [copied, setCopied] = useState(false);
+  const match = /language-(\w+)/.exec(className || '');
+
+  const handleCopy = () => {
+    const textToCopy = String(children).replace(/\n$/, '');
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return match ? (
+    <div className="rounded-md overflow-hidden my-4 border border-outline-variant/20 shadow-sm relative group">
+      <div className="bg-surface-container-high px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <Code className="w-3 h-3" />
+          {match[1]}
+        </div>
+        <button onClick={handleCopy} className="p-1 px-2 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors flex items-center gap-1 text-[10px]" title="Copy">
+          {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+      <pre className="bg-[#1e1e1e] p-4 overflow-x-auto text-[12px] max-h-[800px] overflow-y-auto custom-scrollbar">
+        <code className="text-[#d4d4d4] font-mono" {...props}>{children}</code>
+      </pre>
+    </div>
+  ) : (
+    <code className="bg-surface-container-low text-primary px-1.5 py-0.5 rounded text-sm font-mono border border-primary/10" {...props}>{children}</code>
+  );
+};
+
 const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, saKey: string, selectedRules: any[]) => void }) => {
   const [projectId, setProjectId] = useState('');
   const [saKey, setSaKey] = useState('');
@@ -870,8 +904,8 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
       .then(data => {
         setChecklistRules(data);
         const initial: Record<string, string> = {};
-        data.forEach((r: any, idx: number) => {
-          initial[r.id] = idx % 3 === 0 ? 'Yes' : idx % 3 === 1 ? 'No' : 'Out of Scope';
+        data.forEach((r: any) => {
+          initial[r.id] = r.default_value === 'N' ? 'No' : 'Yes';
         });
         setRuleStatuses(initial);
       })
@@ -1025,7 +1059,7 @@ cat sa-key.json`} />
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/10 text-on-surface">
-                {checklistRules.map((rule, idx) => (
+                {checklistRules.filter(rule => rule.visible !== 'N').map((rule, idx) => (
                   <tr key={rule.id} className="hover:bg-surface-container-lowest/50 transition-colors">
                     <td className="py-1.5 px-4 text-sm font-mono text-on-surface-variant text-center">{idx + 1}</td>
                     <td className="py-1.5 px-4 text-sm font-bold text-on-surface-variant">
@@ -1277,7 +1311,7 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
                        ];
 
                        return (
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-auto">
+                         <div className="grid grid-cols-1 gap-6 h-auto">
                            {domains.map((domain, index) => (
                              <div key={index} className="premium-glass-card p-6 bg-white/80 border border-outline-variant/30 rounded-2xl flex flex-col gap-3 min-h-[400px] h-auto overflow-y-auto">
                                <span className="font-headline font-bold text-sm text-slate-800 pb-2 border-b border-outline-variant/20 flex items-center gap-1.5 uppercase tracking-wide">
@@ -1507,10 +1541,10 @@ const AuditLivePage = ({
           <div className="relative z-10 flex flex-nowrap items-center gap-6 md:gap-14 bg-surface-container-lowest/80 p-4 px-10 rounded-2xl border border-outline-variant/30 shadow-inner justify-between">
             <div className="flex items-center gap-14 pr-10 border-r border-outline-variant/30">
               <div className="flex flex-col items-center">
-                <div className="text-4xl font-mono font-black text-blue-600 tracking-tighter">
+                <div className="text-4xl font-mono font-black text-emerald-600 tracking-tighter">
                   {matchedCount}
                 </div>
-                <span className="text-[10px] font-black text-blue-600/80 uppercase tracking-widest flex items-center gap-1 mt-1">
+                <span className="text-[10px] font-black text-emerald-600/80 uppercase tracking-widest flex items-center gap-1 mt-1">
                   <CheckCircle2 className="w-3 h-3" /> MATCHED
                 </span>
               </div>
@@ -1532,25 +1566,7 @@ const AuditLivePage = ({
               </div>
             </div>
 
-            <div className="flex gap-14">
-              <div className="flex flex-col items-start border-r border-outline-variant/10 pr-10">
-                <span className="text-[10px] font-black text-on-surface-variant/70 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 leading-none">
-                  <Database className="w-3.5 h-3.5 text-blue-500" /> APPLIED
-                </span>
-                <div className="text-2xl font-mono font-black text-on-surface opacity-80">
-                  {evalResults.filter(r => r.status === 'PASS' || r.status === 'APPLIED').length}
-                </div>
-              </div>
-
-              <div className="flex flex-col items-start leading-none">
-                <span className="text-[10px] font-black text-on-surface-variant/70 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" /> NOT APPLIED
-                </span>
-                <div className="text-2xl font-mono font-black text-on-surface opacity-80">
-                  {evalResults.filter(r => r.status === 'FAIL' || r.status === 'NOT_APPLIED').length}
-                </div>
-                </div>
-              </div>
+            {/* Removed APPLIED / NOT APPLIED statistics */}
            </div>
         </div>
 
@@ -1588,7 +1604,7 @@ const AuditLivePage = ({
                    return reasoning || res.reason;
                  } 
                  if (status === 'Mismatched') {
-                   const tfFormatted = tfCode ? `\n\n**Remediation Terraform**\n\`\`\`hcl\n${tfCode}\n\`\`\`` : '';
+                    const tfFormatted = tfCode ? `\n\n${tfCode}` : '';
                    if (!reasoning && !bp && !tfCode) return ""; // 백폴 소거 (공백 축약)
                    return `${reasoning}\n\n${bp ? `**Google Cloud Best Practices**\n\n${bp}` : ''}${tfFormatted}`;
                  }
@@ -1607,92 +1623,103 @@ const AuditLivePage = ({
                  "border-slate-400/30 bg-slate-50/[0.03]"; // Inconclusive
 
                 return (
-                  <div key={rule.id} className={cn("bg-surface border rounded-2xl overflow-hidden transition-all duration-300 shadow-sm", themeClass)}>
+                  <div key={rule.id} className={cn("bg-surface border rounded-2xl overflow-hidden transition-all duration-300 shadow-sm relative", themeClass)}>
+                     {!isWaiting && (
+                         <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", 
+                           status === 'Matched' ? "bg-emerald-600" : 
+                           status === 'Mismatched' ? "bg-red-600" : 
+                           "bg-slate-400")} />
+                     )}
                      <div 
-                      className={cn("px-6 py-5 flex flex-col md:flex-row items-center gap-10 cursor-pointer relative",
-                        status === 'Mismatched' ? "hover:bg-red-500/[0.04]" :
-                        status === 'Matched' ? "hover:bg-emerald-500/[0.04]" :
-                        "hover:bg-slate-500/[0.04]")}
-                       onClick={() => setExpandedRules(p => ({...p, [rule.id]: !isExpanded}))}
+                      className={cn("w-full transition-colors",
+                        hasContent && status === 'Mismatched' ? "hover:bg-red-500/[0.04] cursor-pointer" :
+                        hasContent && status === 'Matched' ? "hover:bg-emerald-500/[0.04] cursor-pointer" :
+                        hasContent ? "hover:bg-slate-500/[0.04] cursor-pointer" : "")}
+                       onClick={() => hasContent && setExpandedRules(p => ({...p, [rule.id]: !isExpanded}))}
                      >
-                      {!isWaiting && (
-                        <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", 
-                          status === 'Matched' ? "bg-emerald-600" : 
-                          status === 'Mismatched' ? "bg-red-600" : 
-                          "bg-slate-400")} />
-                      )}
+                       <div className="px-6 py-5 flex flex-col md:flex-row items-start gap-10">
+                         {/* LEFT: Rule Details & Integrated Reasoning */}
+                         <div className="flex-1 min-w-0">
+                           <div className="flex flex-wrap items-center gap-3 mb-2">
+                             <span className="px-2.5 py-1 rounded-md text-[9px] uppercase font-black tracking-widest bg-surface-container-high text-tertiary shadow-sm">{rule.type}</span>
+                             <span className="text-[10px] font-bold text-on-surface bg-surface-container-lowest px-2.5 py-1 border border-outline-variant/30 rounded-full">{rule.category}</span>
+                           </div>
+                           <h4 className="text-[16px] font-bold text-on-surface tracking-tight leading-snug">{rule.details}</h4>
+                         </div>
 
-                      {/* LEFT: Rule Details & Integrated Reasoning */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-3 mb-2">
-                          <span className="px-2.5 py-1 rounded-md text-[9px] uppercase font-black tracking-widest bg-surface-container-high text-tertiary shadow-sm">{rule.type}</span>
-                          <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container-lowest px-2.5 py-1 border border-outline-variant/30 rounded-full">{rule.category}</span>
-                        </div>
-                        <h4 className="text-[16px] font-bold text-on-surface tracking-tight leading-snug">{rule.details}</h4>
+                         {/* RIGHT: Unified Horizontal Comparison Row (Grid-like Sub-division Left alignment) */}
+                         <div className="flex flex-row items-stretch gap-8 shrink-0 border-l border-outline-variant/20 pl-10 font-black text-[14px] self-stretch py-2">
+                           <div className="flex items-center justify-start gap-3 w-40 shrink-0">
+                             <span className="text-on-surface-variant/70 text-[13px] uppercase tracking-wider w-12 shrink-0">USER</span>
+                             <span className={cn("text-[16px] font-black uppercase tracking-tight whitespace-nowrap w-24 shrink-0 flex items-center justify-start", (userValue === 'Yes' || userValue === 'Y') ? 'text-emerald-700' : (userValue === 'No' || userValue === 'N') ? 'text-red-700' : 'text-slate-600')}>
+                               {userValue === 'Yes' ? 'Y' : userValue === 'No' ? 'N' : userValue === 'Out of Scope' || userValue === 'OUT OF SCOPE' ? 'OUT OF SCOPE' : 'OUT OF SCOPE'}
+                             </span>
+                           </div>
 
-                        {status === 'Mismatched' && !isWaiting && ruleResults[0] && (
-                          <div className="mt-3 p-3 bg-red-600/5 border border-red-500/10 rounded-xl flex items-start gap-3 animate-fadeIn">
-                            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                              <span className="text-[10px] font-black text-red-700 uppercase tracking-tighter block mb-0.5">Mismatched Detected</span>
-                              <p className="text-[12px] text-red-950/90 leading-relaxed font-medium">
-                                {extractSection(ruleResults[0].reason, 'Summary') || ruleResults[0].reason.split('\n').find(line => line.trim().length > 0 && !line.startsWith('Status:') && !line.startsWith('User Configuration:')) || ""}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                           <div className="w-[2.5px] h-full bg-gradient-to-b from-transparent via-outline-variant to-transparent" />
 
-                      {/* RIGHT: 3-Column Comparison Section */}
-                      <div className="flex flex-row items-center gap-8 md:gap-12 shrink-0 border-l border-outline-variant/20 pl-10">
-                        <div className="flex flex-col items-center">
-                          <span className="text-[9px] font-black text-on-surface-variant/70 uppercase tracking-widest leading-none mb-1.5">USER</span>
-                          <span className={cn("text-[11px] font-black uppercase", (userValue === 'Yes' || userValue === 'Y') ? 'text-emerald-600' : (userValue === 'No' || userValue === 'N') ? 'text-red-600' : 'text-slate-600')}>
-                            {userValue === 'Yes' ? 'Y' : userValue === 'No' ? 'N' : 'Out of Scope'}
-                          </span>
-                        </div>
+                           <div className="flex items-center justify-start gap-3 w-28 shrink-0">
+                             <span className="text-on-surface-variant/70 text-[13px] uppercase tracking-wider w-14 shrink-0">AGENT</span>
+                             {isWaiting ? (
+                                <div className="text-[10px] text-slate-500/50 flex items-center font-black w-12 shrink-0 h-10 flex items-center justify-start"><Loader2 className="w-3.5 h-3.5 animate-spin" /></div>
+                             ) : (
+                               <span className={cn("text-[16px] font-black uppercase tracking-tight w-12 shrink-0 flex items-center justify-start", (ruleResults[0].status === 'PASS' || ruleResults[0].status === 'APPLIED') ? 'text-emerald-700' : (ruleResults[0].status === 'FAIL' || ruleResults[0].status === 'NOT_APPLIED') ? 'text-red-700' : 'text-slate-600')}>
+                                 {(ruleResults[0].status === 'PASS' || ruleResults[0].status === 'APPLIED') ? 'Y' : 
+                                  (ruleResults[0].status === 'FAIL' || ruleResults[0].status === 'NOT_APPLIED') ? 'N' : '?'}
+                               </span>
+                             )}
+                           </div>
 
-                        <div className="flex flex-col items-center">
-                          <span className="text-[9px] font-black text-on-surface-variant/70 uppercase tracking-widest leading-none mb-1.5">AGENT</span>
-                          {isWaiting ? (
-                            <span className="text-[11px] font-black text-on-surface-variant/40 animate-pulse italic">WAITING...</span>
-                          ) : (
-                            <span className={cn("text-[11px] font-black uppercase", (ruleResults[0].status === 'PASS' || ruleResults[0].status === 'APPLIED') ? 'text-emerald-600' : (ruleResults[0].status === 'FAIL' || ruleResults[0].status === 'NOT_APPLIED') ? 'text-red-600' : 'text-slate-600')}>
-                              {(ruleResults[0].status === 'PASS' || ruleResults[0].status === 'APPLIED') ? 'Y' : 
-                               (ruleResults[0].status === 'FAIL' || ruleResults[0].status === 'NOT_APPLIED') ? 'N' : 'Inconclusive'}
-                            </span>
-                          )}
-                        </div>
+                           <div className="w-[2.5px] h-full bg-gradient-to-b from-transparent via-outline-variant to-transparent" />
 
-                        <div className="flex flex-col items-center min-w-[100px]">
-                          <span className="text-[9px] font-black text-on-surface-variant/70 uppercase tracking-widest leading-none mb-1.5">STATUS</span>
-                          {isWaiting ? (
-                            <div className="text-[10px] text-blue-600/50 flex items-center gap-1 font-black"><Loader2 className="w-3 h-3 animate-spin" /></div>
-                          ) : (
-                            <div className={cn(
-                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border",
-                              status === 'Matched' ? "bg-emerald-600 text-white border-emerald-700" : status === 'Mismatched' ? "bg-red-600 text-white border-red-700" : "bg-slate-500 text-white border-slate-600"
-                            )}>
-                              {status === 'Matched' ? <CheckCircle2 className="w-3 h-3" /> : status === 'Mismatched' ? <AlertTriangle className="w-3 h-3" /> : <HelpCircle className="w-3 h-3" />}
-                              {status}
-                            </div>
-                          )}
-                        </div>
+                           <div className="flex items-center justify-start gap-3 w-44 shrink-0">
+                             <span className="text-on-surface-variant/70 text-[13px] uppercase tracking-wider w-16 shrink-0">STATUS</span>
+                             {isWaiting ? (
+                               <div className="text-[10px] text-slate-500/50 flex items-center font-black w-24 shrink-0 h-10 flex items-center justify-start"><Loader2 className="w-3.5 h-3.5 animate-spin" /></div>
+                             ) : (
+                               <div className={cn(
+                                 "flex items-center justify-start gap-2 text-[15px] font-black uppercase tracking-wider w-24 shrink-0 h-10",
+                                 status === 'Matched' ? "text-emerald-700" : status === 'Mismatched' ? "text-red-700" : "text-slate-600"
+                               )}>
+                                 {status}
+                               </div>
+                             )}
+                           </div>
 
-                        <ChevronRight className={cn("w-6 h-6 transition-transform duration-300 text-outline-variant", isExpanded && "rotate-90")} />
-                      </div>
+                           {hasContent ? (
+                             <ChevronRight className={cn("w-6 h-6 transition-transform duration-300 text-outline-variant ml-2 self-center", isExpanded && "rotate-90")} />
+                           ) : (
+                             <div className="w-6 h-6 ml-2 self-center" />
+                           )}
+                         </div>
+                       </div>
+                       
+                       {status === 'Mismatched' && !isWaiting && ruleResults[0] && (
+                         <div className="px-10 pb-5 w-full">
+                           <div className="p-4 bg-red-600/5 border border-red-500/10 rounded-xl flex items-start gap-4 animate-fadeIn">
+                             <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={2} />
+                             <div className="flex-1 min-w-0">
+                               <span className="text-[11px] font-black text-red-700 uppercase tracking-tighter block mb-1">Mismatched Detected</span>
+                               <p className="text-[13px] text-red-950/90 leading-relaxed font-semibold">
+                                 {(extractSection(ruleResults[0].reason, 'Summary') || ruleResults[0].reason.split('\n').find(line => line.trim().length > 0 && !line.startsWith('Status:') && !line.startsWith('User Configuration:')) || "").replace(/^\s*(?:- \*\*|- |### |\* |-)?\s*(?:\*\*)?Summary(?:\*\*)?\s*:\s*/i, '').trim()}
+                               </p>
+                             </div>
+                           </div>
+                         </div>
+                       )}
                      </div>
+
 
                     <div className={cn("grid transition-[grid-template-rows] duration-500 ease-in-out bg-surface-container-lowest/20", isExpanded && hasContent ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
                       <div className="overflow-hidden">
-                        <div className="px-10 md:px-28 pb-12 pt-8 border-t border-outline-variant/10">
+                        <div className="px-4 md:px-6 pb-4 pt-4 border-t border-outline-variant/10">
                           {ruleResults.length > 0 && (
-                            <div className="mb-10 animate-slideUp">
+                            <div className="mb-2 animate-slideUp">
 
                               <div className="space-y-6">
                                 {ruleResults.map(res => (
                                   displayContent ? (
-                                    <div key={`res-${res.id}`} className="markdown-content text-on-surface-variant text-[13px] leading-relaxed font-medium p-4 animate-slideUp">
+                                    <div key={`res-${res.id}`} className="markdown-content text-on-surface-variant text-base leading-relaxed font-medium p-0 animate-slideUp">
                                       <div className="hidden">
                                         <div className="flex items-center gap-12">
                                           <div className="flex items-center gap-2">
@@ -1702,9 +1729,17 @@ const AuditLivePage = ({
                                            <span className="text-[10px] font-bold uppercase text-on-surface-variant">Agent: {res.agent || 'Evaluator'}</span>
                                          </div>
                                        </div>
-                                       <div className="p-8">
+                                       <div className="p-2">
                                          <div className="markdown-content text-on-surface-variant text-[14px] leading-relaxed font-medium">
-                                           <ReactMarkdown remarkPlugins={[remarkGfm]} components={SharedMarkdownComponents}>
+                                            <ReactMarkdown 
+                                              remarkPlugins={[remarkGfm]} 
+                                              components={{
+                                                ...SharedMarkdownComponents,
+                                                h2: ({ node, ...props }: any) => <h2 className="text-xl font-headline font-bold text-on-surface mt-6 first:mt-0 mb-3 pb-2 border-b border-outline-variant/30" {...props} />,
+                                                h3: ({ node, ...props }: any) => <h3 className="text-lg font-headline font-semibold text-on-surface mt-4 first:mt-0 mb-2" {...props} />,
+                                                code: TerraformCodeBlock
+                                              }}
+                                            >
                                              {displayContent}
                                            </ReactMarkdown>
                                          </div>
@@ -1746,6 +1781,7 @@ const AuditLivePage = ({
     </div>
   );
 };
+
 
 export default function App() {
   const [appMode, setAppMode] = useState<AppMode>('gcp_advisor');
