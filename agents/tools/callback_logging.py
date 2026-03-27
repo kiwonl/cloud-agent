@@ -15,13 +15,11 @@ def log_query_to_model(callback_context: CallbackContext, llm_request: LlmReques
         callback_context (CallbackContext): The callback context information.
         llm_request (LlmRequest): The request object sent to the model.
     """
-    # Log only if there is request content and the last role is 'user'.
     if llm_request.contents and llm_request.contents[-1].role == "user":
         if llm_request.contents[-1].parts[-1].text:
             last_user_message = llm_request.contents[-1].parts[0].text
-            logging.info(
-                f"🗣️ [Query to {callback_context.agent_name}]: " + last_user_message
-            )
+            # [BEFORE] 한 줄 요약: 모델에게 질문을 던지는 시점
+            logging.info(f"▶▶▶ [BEFORE] Agent: {callback_context.agent_name} | Query: {last_user_message}...")
 
 
 # Callback to log the model's response.
@@ -33,15 +31,11 @@ def log_model_response(callback_context: CallbackContext, llm_response: LlmRespo
         callback_context (CallbackContext): The callback context information.
         llm_response (LlmResponse): The response object from the model.
     """
-    # Log only if there is response content and parts.
     if llm_response.content and llm_response.content.parts:
         for part in llm_response.content.parts:
             if part.text:
-                logging.info(
-                    f"🤖 [Response from {callback_context.agent_name}]: " + part.text
-                )
+                # [AFTER] 한 줄 요약: 모델이 인간 말을 생성한 시점
+                logging.info(f"◀◀◀ [AFTER] Agent: {callback_context.agent_name} | Response: {part.text}...")
             elif part.function_call:
-                logging.info(
-                    f"🛠️ [Function Call from {callback_context.agent_name}]: "
-                    + part.function_call.name
-                )
+                # [TOOL] 한 줄 요약: 모델이 툴 실행을 지시한 시점
+                logging.info(f"🔧 [TOOL_CALL] Agent: {callback_context.agent_name} | Tool: {part.function_call.name} | Args: {part.function_call.args}")

@@ -865,7 +865,7 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
   const [ruleStatuses, setRuleStatuses] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/v1/checklist')
+    fetch('/api/v1/checklist')
       .then(res => res.json())
       .then(data => {
         setChecklistRules(data);
@@ -1099,6 +1099,8 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
   const [logs, setLogs] = useState<{ id: string, message: string, type: string }[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [report, setReport] = useState<string>(existingReport || '');
+  const [agentTab, setAgentTab] = useState<'compute' | 'network' | 'security' | 'database'>('compute');
+
   const logsContainerRef = useRef<HTMLDivElement>(null);
 
 
@@ -1130,7 +1132,7 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
       setLogs([{ id: 'init', type: 'status', message: `Initializing Asset Inventory scan for: ${projectId}...` }]);
       
       try {
-        const response = await fetch('http://localhost:8000/api/v1/audit/analyze', {
+        const response = await fetch('/api/v1/audit/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1243,58 +1245,66 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
       
       <div className="flex flex-col gap-6 flex-1 min-h-[600px] overflow-hidden">
         {/* Area 1: Analysis Report */}
-        <div className="bg-surface border border-outline-variant/30 rounded-2xl flex flex-col h-auto shadow-sm relative overflow-hidden">
-           <div className="bg-surface-container-lowest border-b border-outline-variant/30 px-4 py-3 flex items-center justify-between">
+        <div className="premium-glass-card flex flex-col h-auto relative overflow-hidden">
+           <div className="bg-white/40 border-b border-outline-variant/20 px-6 py-4 flex items-center justify-between backdrop-blur-md">
               <span className="font-headline font-bold text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4 text-tertiary" /> 
-                Infrastructure Analysis Report (Detailed Explanation)
+                Infrastructure Analysis Report
               </span>
               {isStreaming && <div className="flex items-center gap-2 text-xs font-bold text-secondary tracking-widest uppercase"><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</div>}
            </div>
-          <div className="p-6 bg-surface-container-lowest/30 overflow-y-auto">
+          <div className="p-0 bg-surface-container-lowest/30 flex-1 h-0 flex flex-col relative">
               {report ? (
-                 <ReactMarkdown
-                   remarkPlugins={[remarkGfm]}
-                   components={SharedMarkdownComponents}>
-                   {report}
-                 </ReactMarkdown>
+                 <>
+                   <div className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6 relative h-full">
+                     {(() => {
+                       const extractByName = (fullText: string, searchKey: string): string => {
+                         const regex = new RegExp(`##\\s*(?:Gcp)?(?:${searchKey})(?:Analyzer)?\\b[\\s\\S]*?([\\s\\S]*?)(?=(?:##\\s*(?:Gcp)?(?:Compute|Network|Security|Database)(?:Analyzer)?\\b)|$)`, 'i');
+                         const match = fullText.match(regex);
+                         return match ? match[1].trim() : '';
+                       };
+
+                       const computeData = extractByName(report, 'Compute');
+                       const networkData = extractByName(report, 'Network');
+                       const securityData = extractByName(report, 'Security');
+                       const databaseData = extractByName(report, 'Database');
+
+                       const domains = [
+                         { title: '🖥️ Compute Analysis', data: computeData || '🖥️ GcpComputeAnalyzer 데이터 대기 중...' },
+                         { title: '🛰️ Network Analysis', data: networkData || '🛰️ GcpNetworkAnalyzer 데이터 대기 중...' },
+                         { title: '🛡️ Security Analysis', data: securityData || '🛡️ GcpSecurityAnalyzer 데이터 대기 중...' },
+                         { title: '💾 Database Analysis', data: databaseData || '💾 GcpDatabaseAnalyzer 데이터 대기 중...' }
+                       ];
+
+                       return (
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-auto">
+                           {domains.map((domain, index) => (
+                             <div key={index} className="premium-glass-card p-6 bg-white/80 border border-outline-variant/30 rounded-2xl flex flex-col gap-3 min-h-[400px] h-auto overflow-y-auto">
+                               <span className="font-headline font-bold text-sm text-slate-800 pb-2 border-b border-outline-variant/20 flex items-center gap-1.5 uppercase tracking-wide">
+                                 {domain.title}
+                               </span>
+                               <div className="flex-1 overflow-y-auto custom-scrollbar text-xs">
+                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={SharedMarkdownComponents}>
+                                   {domain.data}
+                                 </ReactMarkdown>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       );
+                     })()}
+                   </div>
+                 </>
               ) : (
-                <div className="w-full h-40 flex flex-col items-center justify-center text-outline-variant/50">
+                <div className="w-full h-full flex flex-col items-center justify-center text-outline-variant/50">
                     <Activity className="w-10 h-10 mb-4 opacity-20 animate-pulse" />
-                    <span className="text-xs uppercase tracking-widest font-bold">Scanning Infrastructure...</span>
+                    <span className="text-xs uppercase tracking-widest font-bold">Scanning Infrastructure Topology...</span>
                  </div>
               )}
            </div>
         </div>
 
-        {/* Area 2: Collected Raw Data (Asset Raw Logs) */}
-        <div className="bg-surface border border-outline-variant/30 rounded-2xl flex flex-col flex-1 shadow-sm relative overflow-hidden">
-           <div className="bg-surface-container-lowest border-b border-outline-variant/30 px-4 py-3 flex items-center justify-between">
-              <span className="font-headline font-bold text-sm flex items-center gap-2">
-                <FileDown className="w-4 h-4 text-secondary" />
-                Collected Raw Data (Inventory Details)
-              </span>
-           </div>
-          <div ref={logsContainerRef} className="p-6 bg-surface-container-lowest/30 text-sm text-on-surface-variant space-y-2 overflow-y-auto flex-1">
-              {logs.filter(log => log.type === 'inventory').map((log) => (
-                <div key={log.id} className="p-1 rounded transition-colors hover:bg-surface-container-low/50 border-b border-outline-variant/5 last:border-0 pb-2">
-                  <div className="markdown-content inventory-markdown flex-1 overflow-hidden">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={SharedMarkdownComponents}>
-                      {log.message}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              ))}
-              {logs.filter(log => log.type === 'inventory').length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center opacity-80 py-20 italic text-on-surface/70">
-                  <Database className="w-10 h-10 mb-3 text-secondary animate-bounce" />
-                  <span className="text-sm font-black tracking-tight">Awaiting agent's inventory response data...</span>
-                </div>
-            )}
-           </div>
-        </div>
+
       </div>
     </div>
   );
@@ -1345,7 +1355,7 @@ const AuditLivePage = ({
       setLogs([{ id: 'init', agent: 'system', type: 'status', message: `Initializing audit pipeline for project: ${projectId}...` }]);
       
       try {
-        const response = await fetch('http://localhost:8000/api/v1/audit/evaluate', {
+        const response = await fetch('/api/v1/audit/evaluate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

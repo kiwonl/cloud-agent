@@ -2,6 +2,7 @@ import asyncio
 import csv
 import json
 import logging
+import random
 import os
 import sys
 from typing import List, Dict, Any
@@ -18,14 +19,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Ensure local imports work regardless of how it's executed
-sys.path.append(os.path.dirname(__file__))
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.append(_current_dir)
 
 try:
     from gcp_analyzer.agent import root_agent as analyzer_agent
     from gcp_evaluator.agent import root_agent as evaluator_agent
     from gcp_remediator.agent import root_agent as remediator_agent
 except ImportError as e:
-    logger.error(f"Failed to import agents: {e}")
+    logger.error(f"Failed to import agents: {e}", exc_info=True)
     analyzer_agent = evaluator_agent = remediator_agent = None
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,7 +48,7 @@ async def run_agent_stateless(agent, prompt: str, session_id: str) -> str:
     )
     
     # Adding a simple retry logic for 429 Resource Exhausted
-    max_retries = 3
+    max_retries = 5
     for attempt in range(max_retries):
         try:
             events = runner.run_async(
@@ -55,15 +58,27 @@ async def run_agent_stateless(agent, prompt: str, session_id: str) -> str:
             )
             res = ""
             async for event in events:
+                # 1. 표준 ADK Agent 응답 파트 파싱 (Part.text)
                 if getattr(event, "content", None) and getattr(event.content, "parts", None):
                     for part in event.content.parts:
                         if getattr(part, "text", None):
                             res += part.text
+                # 2. 디펜시브: event 객체 자체가 문자열이거나 .text, .result 속성을 가지고 있는 경우
+                elif isinstance(event, str):
+                    res += event
+                elif hasattr(event, "text") and isinstance(event.text, str):
+                    res += event.text
+                elif hasattr(event, "result") and event.result:
+                    res += str(event.result)
+                # 3. 디펜시브: 이벤트 문자열화 (백업)
+                else:
+                    # 필요 시 로그나 다른 속성 추출
+                    pass
             return res
         except Exception as e:
             if "429" in str(e) and attempt < max_retries - 1:
-                wait_time = (attempt + 1) * 2
-                logger.warning(f"429 detected, retrying in {wait_time}s... (Attempt {attempt + 1}/{max_retries})")
+                wait_time = (attempt + 1) * 2 + random.uniform(0.5, 2.0)
+                logger.warning(f"429 detected, retrying in {wait_time:.2f}s... (Attempt {attempt + 1}/{max_retries})")
                 await asyncio.sleep(wait_time)
                 continue
             raise e
@@ -109,7 +124,7 @@ async def stream_analyze(req: AnalyzeRequest):
         yield f"data: {json.dumps({'type': 'complete', 'agent': 'system'})}\n\n"
 
     except Exception as e:
-        logger.error(f"Analyzer critical error: {e}")
+        logger.error(f"Analyzer critical error: {e}", exc_info=True)
         yield f"data: {json.dumps({'type': 'error', 'agent': 'analyzer', 'message': f'Critical Error: {str(e)}'})}\n\n"
     finally:
         if temp_key_path and os.path.exists(temp_key_path):
