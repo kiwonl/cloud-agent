@@ -96,6 +96,7 @@ class AnalyzeRequest(BaseModel):
 
 class EvaluateRequest(BaseModel):
     project_id: str
+    sa_key: str = ""
     session_id: str
     infrastructure_report: str
     checklist_items: List[Dict[str, str]]
@@ -135,7 +136,15 @@ async def stream_analyze(req: AnalyzeRequest):
                 del os.environ["TARGET_SA_CREDENTIALS_PATH"]
 
 async def stream_evaluate(req: EvaluateRequest):
+    temp_key_path = None
+    original_creds = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
     try:
+        if req.sa_key and req.sa_key.strip():
+            fd, temp_key_path = tempfile.mkstemp(suffix=".json")
+            with os.fdopen(fd, 'w') as f:
+                f.write(req.sa_key)
+            os.environ["TARGET_SA_CREDENTIALS_PATH"] = temp_key_path
+
         yield f"data: {json.dumps({'type': 'status', 'agent': 'evaluator', 'message': f'Starting Agent 2 parallel loop for {len(req.checklist_items)} items.'})}\n\n"
         
         semaphore = asyncio.Semaphore(5)
@@ -145,16 +154,38 @@ async def stream_evaluate(req: EvaluateRequest):
             async with semaphore:
                 item_id = item.get("id", "unknown")
                 rule_text = json.dumps(item, ensure_ascii=False)
+                user_status = item.get('user_status', 'Yes')
                 
+                # Fast-fail short-circuit for 'N' or 'Out of Scope' to skip evaluator agent
+                if user_status in ['N', 'No', 'Out of Scope', 'OUT OF SCOPE']:
+                    try:
+                        eval_text = "사용자가 의도적으로 '미적용(N)' 또는 '예외(Out of Scope)'로 설정한 항목이므로 인프라 스캔 및 판단을 생략합니다."
+                        status = "N/A"
+                        
+                        await queue.put(f"data: {json.dumps({'type': 'status', 'agent': 'remediator', 'rule_id': item_id, 'message': f'Invoking Agent 3 for Best Practices on {item_id}...'})}\n\n")
+                        
+                        rem_prompt = (
+                            f"Skipped Item: {rule_text}\n"
+                            f"The user has marked this item as {user_status}. Therefore, we skipped the evaluation step. Please provide ONLY the relevant Google Cloud Best Practices for this topic in Korean."
+                        )
+                        rem_text = await run_agent_stateless(remediator_agent, rem_prompt, f"{req.session_id}_{item_id}_rem")
+                        
+                        await queue.put(f"data: {json.dumps({'type': 'result', 'agent': 'evaluator', 'rule_id': item_id, 'status': status, 'reason': eval_text, 'resource': 'Target Project'})}\n\n")
+                        await queue.put(f"data: {json.dumps({'type': 'remediation_plan', 'agent': 'remediator', 'rule_id': item_id, 'data': rem_text})}\n\n")
+                        return
+                    except Exception as e:
+                        logger.error(f"Error resolving skipped item {item_id}: {e}")
+                        await queue.put(f"data: {json.dumps({'type': 'error', 'agent': 'evaluator', 'rule_id': item_id, 'message': str(e)})}\n\n")
+                        return
+
+                # Normal Evaluator Path
                 eval_prompt = (
                     f"You are a Cloud Infrastructure Evaluator Agent.\n"
                     f"Evaluation Target Project: {req.project_id}\n"
                     f"Checklist Item Rule (JSON):\n{rule_text}\n"
                     f"\n[⚠️ IMPORTANT INSTRUCTION]\n"
-                    f"The user has specified their status/requirement as: '{item.get('user_status', 'Yes')}'.\n"
-                    f"- If the status is 'No' or 'Out of Scope', it means the user has EXPLICITLY decided NOT to apply this rule or it is not applicable for this project. Please RESPECT this decision!\n"
-                    f"- If the user says 'No', DO NOT mark it as a violation or FAIL just because it deviates from standard best practices. Treat it as N/A or PASS.\n"
-                    f"- Write your reasoning in Korean.\n\n"
+                    f"The user has specified their status/requirement as: '{user_status}'.\n"
+                    f"Write your reasoning in Korean.\n\n"
                     f"---\n"
                     f"Infrastructure Report:\n{req.infrastructure_report}\n"
                     f"(IMPORTANT: Your output Reasoning MUST be written in Korean! 모든 답변은 반드시 한국어로 상세히 작성하세요.)\n"
@@ -163,23 +194,18 @@ async def stream_evaluate(req: EvaluateRequest):
                 try:
                     eval_text = await run_agent_stateless(evaluator_agent, eval_prompt, f"{req.session_id}_{item_id}_eval")
                     
-                    status = "APPLIED"  # Default 'APPLIED'
+                    status = "Matched"  # Default
                     upper_text = eval_text.upper()
-                    # Logic: If it has FAIL or explicitly states NOT_APPLIED, then it is NOT_APPLIED.
-                    if "FAIL" in upper_text or "NOT APPLIED" in upper_text or "NOT_APPLIED" in upper_text:
-                        status = "NOT_APPLIED"
-                    # If it has WARN or UNDER_REVIEW, then it is UNDER_REVIEW.
+                    if "MISMATCHED" in upper_text or "FAIL" in upper_text or "NOT APPLIED" in upper_text or "NOT_APPLIED" in upper_text:
+                        status = "Mismatched"
                     elif "UNDER_REVIEW" in upper_text or "UNDER REVIEW" in upper_text or "WARN" in upper_text:
-                        status = "UNDER_REVIEW"
+                        status = "Under Review"
                     elif "N.A" in upper_text or "N/A" in upper_text:
                         status = "N/A"
-                    # If it has PASS or PASSED, it is definitively APPLIED.
-                    elif "PASS" in upper_text or "PASSED" in upper_text:
-                        status = "APPLIED"
+                    elif "MATCHED" in upper_text or "PASS" in upper_text or "PASSED" in upper_text:
+                        status = "Matched"
                     
-                    await queue.put(f"data: {json.dumps({'type': 'result', 'agent': 'evaluator', 'rule_id': item_id, 'status': status, 'reason': eval_text, 'resource': 'Target Project'})}\n\n")
-                    
-                    if status in ["NOT_APPLIED", "WARNING"]:
+                    if status in ["Mismatched", "WARNING", "Under Review"]:
                         await queue.put(f"data: {json.dumps({'type': 'status', 'agent': 'remediator', 'rule_id': item_id, 'message': f'Invoking Agent 3 for Remediation on {item_id}...'})}\n\n")
                         
                         rem_prompt = (
@@ -188,7 +214,12 @@ async def stream_evaluate(req: EvaluateRequest):
                         )
                         rem_text = await run_agent_stateless(remediator_agent, rem_prompt, f"{req.session_id}_{item_id}_rem")
                         
+                        # Send both Evaluator Result and Remediation Plan simultaneously
+                        await queue.put(f"data: {json.dumps({'type': 'result', 'agent': 'evaluator', 'rule_id': item_id, 'status': status, 'reason': eval_text, 'resource': 'Target Project'})}\n\n")
                         await queue.put(f"data: {json.dumps({'type': 'remediation_plan', 'agent': 'remediator', 'rule_id': item_id, 'data': rem_text})}\n\n")
+                    else:
+                        # If passed, just send the Evaluator Result
+                        await queue.put(f"data: {json.dumps({'type': 'result', 'agent': 'evaluator', 'rule_id': item_id, 'status': status, 'reason': eval_text, 'resource': 'Target Project'})}\n\n")
                         
                 except Exception as e:
                     logger.error(f"Error evaluating item {item_id}: {e}")
@@ -212,6 +243,13 @@ async def stream_evaluate(req: EvaluateRequest):
     except Exception as e:
         logger.error(f"Evaluation critical error: {e}")
         yield f"data: {json.dumps({'type': 'error', 'agent': 'system', 'message': f'Critical Error: {str(e)}'})}\n\n"
+    finally:
+        if temp_key_path and os.path.exists(temp_key_path):
+            os.remove(temp_key_path)
+            if original_creds is not None:
+                pass
+            if "TARGET_SA_CREDENTIALS_PATH" in os.environ:
+                del os.environ["TARGET_SA_CREDENTIALS_PATH"]
 
 @router.post("/api/v1/audit/analyze")
 async def audit_analyze(req: AnalyzeRequest):
@@ -225,7 +263,7 @@ async def audit_evaluate(req: EvaluateRequest):
 
 @router.get("/api/v1/checklist")
 def get_checklist():
-    csv_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "checklist.csv")
+    csv_file_path = os.path.join(os.path.dirname(__file__), "..", "data", "checklist.csv")
     csv_file_path = os.path.normpath(csv_file_path)
     
     if not os.path.exists(csv_file_path):

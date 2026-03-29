@@ -60,6 +60,10 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
     --quiet
 
 
+echo "Ensuring checklist file is available for Agent build..."
+mkdir -p "$SCRIPT_DIR/../agents/data"
+cp "$SCRIPT_DIR/../frontend/datas/checklist.csv" "$SCRIPT_DIR/../agents/data/checklist.csv" 2>/dev/null || echo "Warning: Could not copy checklist.csv"
+
 echo "Deploying Agent (Backend) $AGENT_SERVICE_NAME to Google Cloud Run..."
 gcloud run deploy $AGENT_SERVICE_NAME \
     --source "$SCRIPT_DIR/../agents" \

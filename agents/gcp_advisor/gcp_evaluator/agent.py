@@ -5,7 +5,7 @@ from google.adk import Agent
 # tools 모듈을 찾기 위한 경로 추가 (공용 로깅)
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from tools.callback_logging import log_query_to_model, log_model_response
-from gcp_advisor.gcp_analyzer.gcp_discovery import get_specific_gcp_resource
+from gcp_advisor.gcp_analyzer.gcp_discovery import get_specific_gcp_resource, execute_gcloud_command
 
 def load_prompt(filename):
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,5 +20,5 @@ root_agent = Agent(
     instruction=load_prompt("gcp_evaluator.txt"),
     before_model_callback=log_query_to_model,
     after_model_callback=log_model_response,
-    tools=[get_specific_gcp_resource]
+    tools=[get_specific_gcp_resource, execute_gcloud_command]
 )

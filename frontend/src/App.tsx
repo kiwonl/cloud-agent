@@ -803,28 +803,49 @@ const CHECKLIST_DATA: any[] = [];
 
 const extractSection = (text: string, title: string): string => {
   if (!text) return "";
+
+  // 1. JSON 포맷 파싱 시도 (LLM이 Markdown 대신 JSON 객체로 응답하는 경우 처리)
+  try {
+    // 마크다운 코드블럭(```json ... ```) 내부의 텍스트만 추출하거나, 전체 텍스트를 사용
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    const jsonStr = jsonMatch ? jsonMatch[1].trim() : text.trim();
+    
+    if (jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
+      const parsed = JSON.parse(jsonStr);
+      if (parsed && typeof parsed === 'object') {
+        const key = Object.keys(parsed).find(k => k.toLowerCase() === title.toLowerCase() || k.toLowerCase() === '상세 이유');
+        if (key && parsed[key]) {
+          return String(parsed[key]).trim();
+        }
+      }
+    }
+  } catch (e) {
+    // JSON 형식이 아니거나 파싱 실패 시, 무시하고 아래 마크다운 파싱 로직으로 진행
+  }
+
+  // 2. 일반 마크다운 파싱 로직
   const lines = text.split('\n');
   let inSection = false;
   let result: string[] = [];
   
   // 대소문자 무시 및 마크다운 볼드(**), 하이픈(-), 우물정(###) 기호가 동반되더라도 유연하게 매칭
-  const titleRegex = new RegExp(`(?:\\*\\*|- |### |\\* )?${title}\\s*:`, 'i');
-  const sectionBreakRegex = /^(?:- \*\*|### |\* |- |[a-zA-Z0-9]+:)/;
+  const titleRegex = new RegExp(`^(?:\\s*[-*#]+)?\\s*(?:\\*\\*)?\\s*${title}\\s*(?:\\*\\*)?\\s*:`, 'i');
+  
+  // 다음 섹션의 시작을 감지하는 정규식 (예: "- **Reasoning**:", "### Status:")
+  const sectionBreakRegex = /^(?:\s*[-*#]+)?\s*(?:\*\*)?[a-zA-Z0-9\s]+(?:\*\*)?\s*:/;
 
   for (const line of lines) {
     if (titleRegex.test(line)) {
       inSection = true;
       const contentAfterTitle = line.split(':').slice(1).join(':').trim();
-      if (contentAfterTitle) result.push(contentAfterTitle);
+      const cleanContent = contentAfterTitle.replace(/^\*\*/, '').replace(/\*\*$/, '').trim();
+      if (cleanContent) result.push(cleanContent);
       continue;
     }
     
-    // 만약 다른 섹션(예: 또 다른 필드나 메타데이터 등)이 나타나면 요약 파싱을 종료
+    // 만약 다른 지정된 마크다운 섹션 필드명 패턴이 등장하면 추출 종료
     if (inSection && sectionBreakRegex.test(line.trim())) {
-      // 하지만 본인 영역 내 특수 개행이 아닌 정말로 다른 명명 필드(ex: "- **Status**:") 구조일 때 종료
-      if (line.trim().startsWith('- **') || line.trim().startsWith('###')) {
-        break;
-      }
+      break;
     }
     
     // 특정 섹션 추출 시 예외 간섭 방어
@@ -905,7 +926,13 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
         setChecklistRules(data);
         const initial: Record<string, string> = {};
         data.forEach((r: any) => {
-          initial[r.id] = r.default_value === 'N' ? 'No' : 'Yes';
+          if (r.default_value === 'N') {
+            initial[r.id] = 'No';
+          } else if (r.default_value === 'OsS' || r.default_value === 'OoS') {
+            initial[r.id] = 'Out of Scope';
+          } else {
+            initial[r.id] = 'Yes';
+          }
         });
         setRuleStatuses(initial);
       })
@@ -960,31 +987,38 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
               </div>
               <div>
                 <h3 className="font-headline font-bold text-on-surface">Target Environment</h3>
-                <p className="text-xs text-on-surface-variant">Specify GCP Project ID and SA Key</p>
+                <p className="text-xs text-on-surface-variant">Specify Google Cloud Project ID and SA Key</p>
               </div>
             </div>
-            <div className="p-6 space-y-6">
-              <div>
-                <label className="block text-sm font-bold text-on-surface mb-2">Google Cloud Project ID</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. acme-corp-production-01" 
-                  value={projectId}
-                  onChange={e => setProjectId(e.target.value)}
-                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
-                />
+            <div className="p-6 space-y-5">
+              {/* Step 1 */}
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">1</div>
+                  <label className="text-sm font-bold text-on-surface">Enter Google Cloud Project ID</label>
+                </div>
+                <div className="ml-9">
+                  <input
+                    type="text"
+                    placeholder="e.g. acme-corp-production-01"
+                    value={projectId}
+                    onChange={e => setProjectId(e.target.value)}
+                    className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono shadow-inner"
+                  />
+                </div>
               </div>
 
-              <div className="mt-2">
-                <div className="flex items-center gap-2 mb-4">
-                  <TerminalIcon className="w-4 h-4 text-on-surface-variant" />
-                  <h4 className="text-sm font-bold text-on-surface">GCP Required Commands</h4>
+              {/* Step 2 */}
+              <div className="relative pt-2 border-t border-outline-variant/20">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">2</div>
+                  <h4 className="text-sm font-bold text-on-surface">Run Configuration Commands in your Environment</h4>
                 </div>
-                
-                <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
-                  Copy and run the command below to create a service account, grant the Viewer role, and print the generated JSON key format right away.
-                </p>
-                <CommandBlock command={`# 1. Cloud Asset Inventory API 활성화
+                <div className="ml-9">
+                  <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                    Copy and run the command below to create a service account, grant the Viewer role, and print the generated JSON key format right away.
+                  </p>
+                  <CommandBlock command={`# 1. Cloud Asset Inventory API 활성화
 # 프로젝트 내 모든 리소스의 메타데이터를 조회하기 위해 필요한 API를 켭니다.
 gcloud services enable cloudasset.googleapis.com \\
   --project=${projectId || 'PROJECT_ID'} && \\
@@ -1014,20 +1048,30 @@ gcloud iam service-accounts keys create sa-key.json \\
 # 6. 생성된 키 내용 확인
 # 생성된 JSON 키 파일의 내용을 터미널에 출력합니다 (보통 이 내용을 복사하여 환경 변수 등에 설정합니다).
 cat sa-key.json`} />
+                </div>
               </div>
               
-              <div className="mt-2">
-                <label className="block text-sm font-bold text-on-surface mb-2">Service Account JSON Key</label>
-                <textarea 
-                  placeholder='{\n  "type": "service_account",\n  "project_id": "...",\n  ...' 
-                  value={saKey}
-                  onChange={e => {
-                    setSaKey(e.target.value);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = e.target.scrollHeight + 'px';
-                  }}
-                  className="w-full min-h-[180px] bg-surface-container-low border border-outline-variant/40 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono whitespace-pre resize-none overflow-hidden"
-                />
+              {/* Step 3 */}
+              <div className="relative pt-2 border-t border-outline-variant/20">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">3</div>
+                  <label className="text-sm font-bold text-on-surface">Paste Service Account JSON Key</label>
+                </div>
+                <div className="ml-9">
+                  <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                    Paste the JSON output exactly as it was printed in the terminal.
+                  </p>
+                  <textarea
+                    placeholder='{\n  "type": "service_account",\n  "project_id": "...",\n  ...'
+                    value={saKey}
+                    onChange={e => {
+                      setSaKey(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                    className="w-full min-h-[160px] bg-surface-container-low border border-outline-variant/40 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono whitespace-pre resize-none overflow-hidden shadow-inner"
+                  />
+                </div>
               </div>
             </div>
           </section>
@@ -1346,6 +1390,7 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
 
 const AuditLivePage = ({
   projectId,
+  saKey,
   rules,
   infrastructureReport,
   logs,
@@ -1358,6 +1403,7 @@ const AuditLivePage = ({
   setExpandedRules
 }: {
   projectId: string;
+  saKey: string;
   rules: any[];
   infrastructureReport: string;
   logs: AuditLog[];
@@ -1394,6 +1440,7 @@ const AuditLivePage = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             project_id: projectId,
+            sa_key: saKey,
             infrastructure_report: infrastructureReport,
             checklist_items: rules,
             session_id: 'session-' + Date.now()
@@ -1441,13 +1488,8 @@ const AuditLivePage = ({
                       setActiveAgent(newLog.agent);
                     }
 
-                    if (newLog.type === 'result' && newLog.status === 'FAIL' && newLog.rule_id) {
-                      setExpandedRules(prev => ({ ...prev, [newLog.rule_id!]: true }));
-                    }
-
                     if (newLog.type === 'remediation_plan' && newLog.data && newLog.rule_id) {
                       setRemediationMap(prev => ({ ...prev, [newLog.rule_id!]: newLog.data! }));
-                      setExpandedRules(prev => ({ ...prev, [newLog.rule_id!]: true }));
                     }
                     
                     setLogs(prev => [...prev, newLog]);
@@ -1492,18 +1534,14 @@ const AuditLivePage = ({
     }
 
     // 에이전트 판단 가공
-    const agentValue = (res.status === 'PASS' || res.status === 'APPLIED') ? 'Y' : 
-                       (res.status === 'FAIL' || res.status === 'NOT_APPLIED') ? 'N' : 'Inconclusive';
+    const uiStatus = res.status;
 
-    // 사용자의 'Yes' 또는 'No' 를 'Y' 와 'N' 으로 매칭하여 대조
-    const userMapped = userValue === 'Yes' ? 'Y' : userValue === 'No' ? 'N' : userValue;
-
-    if (agentValue === 'Inconclusive') {
-      acc[rule.id] = 'Inconclusive';
-    } else if (userMapped === agentValue) {
+    if (uiStatus === 'Matched' || uiStatus === 'PASS' || uiStatus === 'APPLIED') {
       acc[rule.id] = 'Matched';
-    } else {
+    } else if (uiStatus === 'Mismatched' || uiStatus === 'FAIL' || uiStatus === 'NOT_APPLIED') {
       acc[rule.id] = 'Mismatched';
+    } else {
+      acc[rule.id] = 'Inconclusive';
     }
     return acc;
   }, {} as Record<string, 'Matched' | 'Mismatched' | 'Inconclusive'>);
@@ -1595,24 +1633,43 @@ const AuditLivePage = ({
                const displayContent = (() => {
                  if (ruleResults.length === 0) return '';
                  const res = ruleResults[0];
-                 const bp = extractSection(res.reason, 'Google Cloud Best Practices');
-                 const reasoning = extractSection(res.reason, 'Reasoning');
-                 const tfCode = remediationMap[rule.id]; // 테라폼 코드
 
-                 if (status === 'Matched') {
-                   if (userMapped === 'N') return bp ? `**Google Cloud Best Practices**\n\n${bp}` : '';
-                   return reasoning || res.reason;
-                 } 
-                 if (status === 'Mismatched') {
-                    const tfFormatted = tfCode ? `\n\n${tfCode}` : '';
-                   if (!reasoning && !bp && !tfCode) return ""; // 백폴 소거 (공백 축약)
-                   return `${reasoning}\n\n${bp ? `**Google Cloud Best Practices**\n\n${bp}` : ''}${tfFormatted}`;
+                 const bp = extractSection(res.reason, 'Google Cloud Best Practices') || extractSection(res.reason, 'Google Cloud Best Practice');
+                 const tfCode = remediationMap[rule.id];
+
+                 // Extract Reasoning cleanly
+                 let reasoning = extractSection(res.reason, 'Reasoning') || extractSection(res.reason, '상세 이유');
+
+                 // Fallback if regex failed and JSON wasn't detected
+                 if (!reasoning) {
+                   reasoning = res.reason
+                     .replace(new RegExp(`(?:\\*\\*|- |### |\\* )?Google Cloud Best Practice(?:s)?[\\s\\S]*`, 'gi'), '')
+                     .replace(/^(?:\\*\\*|- |### |\\* )?Summary\\s*:.*$/gmi, '')
+                     .replace(/^(?:\\*\\*|- |### |\\* )?Status\\s*:.*$/gmi, '')
+                     .trim();
                  }
-                 if (status === 'Inconclusive') {
-                   if (userMapped === 'Out of Scope') return bp ? `**Google Cloud Best Practices**\n\n${bp}` : '';
-                   return '';
+
+                 let content = "";
+
+                 // 1. Agent Decision Reason (Always shown unless User marked N/Out of Scope)
+                 const isUserSkipped = userValue === 'No' || userValue === 'N' || userValue === 'Out of Scope' || userValue === 'OUT OF SCOPE';
+                 if (reasoning && !isUserSkipped) {
+                   content += `### 🤖 Agent Decision Reason\n\n${reasoning}\n\n`;
                  }
-                 return res.reason;
+
+                 // If we have Remediation Code (Remediator output), it naturally contains
+                 // both "💡 Google Cloud Best Practice" and "🛠️ Remediation Code (Terraform / gcloud)".
+                 // So we just append it!
+                 if (tfCode && tfCode.trim()) {
+                   content += `${tfCode.trim()}\n\n`;
+                 } else {
+                   // Only show Evaluator's Best Practice if Remediator didn't run
+                   if (bp && bp.trim()) {
+                     content += `### 💡 Google Cloud Best Practice\n\n${bp.trim()}\n\n`;
+                   }
+                 }
+
+                 return content.trim();
                })();
 
                const hasContent = displayContent.trim().length > 0;
@@ -1663,9 +1720,11 @@ const AuditLivePage = ({
                              {isWaiting ? (
                                 <div className="text-[10px] text-slate-500/50 flex items-center font-black w-12 shrink-0 h-10 flex items-center justify-start"><Loader2 className="w-3.5 h-3.5 animate-spin" /></div>
                              ) : (
-                               <span className={cn("text-[16px] font-black uppercase tracking-tight w-12 shrink-0 flex items-center justify-start", (ruleResults[0].status === 'PASS' || ruleResults[0].status === 'APPLIED') ? 'text-emerald-700' : (ruleResults[0].status === 'FAIL' || ruleResults[0].status === 'NOT_APPLIED') ? 'text-red-700' : 'text-slate-600')}>
-                                 {(ruleResults[0].status === 'PASS' || ruleResults[0].status === 'APPLIED') ? 'Y' : 
-                                  (ruleResults[0].status === 'FAIL' || ruleResults[0].status === 'NOT_APPLIED') ? 'N' : '?'}
+                                <span className={cn("text-[16px] font-black uppercase tracking-tight w-12 shrink-0 flex items-center justify-start",
+                                  consistencyMap[rule.id] === 'Matched' ? ((userValue === 'Yes' || userValue === 'Y') ? 'text-emerald-700' : 'text-red-700') :
+                                    consistencyMap[rule.id] === 'Mismatched' ? ((userValue === 'Yes' || userValue === 'Y') ? 'text-red-700' : 'text-emerald-700') : 'text-slate-600')}>
+                                  {consistencyMap[rule.id] === 'Matched' ? ((userValue === 'Yes' || userValue === 'Y') ? 'Y' : 'N') :
+                                    consistencyMap[rule.id] === 'Mismatched' ? ((userValue === 'Yes' || userValue === 'Y') ? 'N' : 'Y') : 'N/A'}
                                </span>
                              )}
                            </div>
@@ -2071,6 +2130,7 @@ ${safeMappings}`;
                   {activePage === 'audit_live' && (
                     <AuditLivePage
                       projectId={auditProjectId}
+                      saKey={auditSaKey}
                       rules={auditRules}
                       infrastructureReport={infrastructureReport}
                       logs={auditLogs}

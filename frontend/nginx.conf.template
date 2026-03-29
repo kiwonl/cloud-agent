@@ -23,4 +23,20 @@ server {
         proxy_connect_timeout 600s;
         proxy_send_timeout 600s;
     }
+
+    # 3. 신규 GCP Advisor API 및 SSE 라우팅
+    location /api {
+        proxy_pass ${AGENT_API_URL};
+        proxy_ssl_server_name on;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 타임아웃 연장 및 SSE를 위한 버퍼링 해제
+        proxy_read_timeout 600s;
+        proxy_connect_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_buffering off;
+        chunked_transfer_encoding on;
+    }
 }

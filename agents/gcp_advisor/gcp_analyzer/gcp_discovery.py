@@ -269,3 +269,51 @@ def get_specific_gcp_resource(project_id: str, resource_type: str, resource_name
     except Exception as e:
         logger.error(f"Active discovery failed: {e}")
         return json.dumps({"error": f"API call failed: {e}"})
+
+def execute_gcloud_command(project_id: str, command: str) -> str:
+    """
+    Executes a read-only gcloud command to fetch live metadata from the GCP environment.
+    Use this when you need detailed granular settings (like DB flags, regional HA settings) not provided in the basic report.
+    
+    Args:
+        project_id: The GCP project ID.
+        command: The full gcloud command to run (e.g. "gcloud sql instances describe inst-1 --format=json")
+                 Do NOT include the --project flag, it will be added automatically.
+        
+    Returns:
+        The standard output of the command or the error string.
+    """
+    import subprocess
+    import os
+    
+    if not command.strip().startswith("gcloud"):
+        return json.dumps({"error": "Only 'gcloud' commands are allowed."})
+    
+    # Security: block mutating commands
+    forbidden = ["delete", "create", "update", "patch", "set", "remove"]
+    for f in forbidden:
+        if f in command:
+            return json.dumps({"error": f"Mutating commands are forbidden. Found '{f}'."})
+            
+    # Inject auth via GOOGLE_APPLICATION_CREDENTIALS for ADC compatibility
+    creds_path = os.environ.get("TARGET_SA_CREDENTIALS_PATH")
+    env = os.environ.copy()
+    if creds_path and os.path.exists(creds_path):
+        env["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
+        
+    if "--project" not in command:
+        command += f" --project={project_id}"
+        
+    if "--format" not in command:
+        command += " --format=json"
+        
+    try:
+        res = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=15, env=env)
+        if res.returncode == 0:
+            return res.stdout
+        else:
+            return json.dumps({"error": f"gcloud execution failed: {res.stderr}"})
+    except Exception as e:
+        logger.error(f"Failed to run gcloud command {command}: {e}", exc_info=True)
+        return json.dumps({"error": f"Execution exception: {e}"})
+
