@@ -4,10 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
-# Load .env variables if present
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
-fi
+# Load .env variables implicitly inside Python or Node (do not use xargs due to multiline JSON strings)
 
 # node_env가 있을 경우 PATH 업데이트
 if [ -d "node_env/bin" ]; then

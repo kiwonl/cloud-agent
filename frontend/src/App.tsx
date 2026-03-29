@@ -919,7 +919,8 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
   const [checklistRules, setChecklistRules] = useState<any[]>([]);
   const [ruleStatuses, setRuleStatuses] = useState<Record<string, string>>({});
 
-  useEffect(() => {
+    useEffect(() => {
+    // 1. Fetch Checklist Defaults
     fetch('/api/v1/checklist')
       .then(res => res.json())
       .then(data => {
@@ -937,7 +938,21 @@ const AuditSetupPage = ({ onStartAudit }: { onStartAudit: (projectId: string, sa
         setRuleStatuses(initial);
       })
       .catch(err => console.error("Failed to load checklist:", err));
+
+    // 2. Fetch Pre-filled Configuration (from .env or key.json)
+    fetch('/api/v1/config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.project_id) {
+            setProjectId(data.project_id);
+        }
+        if (data.sa_key) {
+            setSaKey(data.sa_key);
+        }
+      })
+      .catch(err => console.error("Failed to load default config:", err));
   }, []);
+
 
   const handleStatusChange = (id: string, status: string) => {
     setRuleStatuses(prev => ({ ...prev, [id]: status }));

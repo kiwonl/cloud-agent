@@ -260,6 +260,27 @@ async def audit_evaluate(req: EvaluateRequest):
     return StreamingResponse(stream_evaluate(req), media_type="text/event-stream")
 
 
+@router.get("/api/v1/config")
+def get_config():
+    project_id = os.environ.get("TARGET_PROJECT_ID", "")
+    
+    # Check for direct multi-line SA key in env var
+    sa_key = os.environ.get("TARGET_SA_KEY", "")
+    
+    # Fallback to key.json if env var is empty
+    if not sa_key:
+        default_key_path = os.environ.get("DEFAULT_SA_KEY_PATH", "key.json")
+        if os.path.exists(default_key_path):
+            try:
+                with open(default_key_path, 'r', encoding='utf-8') as f:
+                    sa_key = f.read()
+            except Exception as e:
+                logger.error(f"Failed to read default key.json: {e}")
+                
+    return {
+        "project_id": project_id,
+        "sa_key": sa_key
+    }
 
 @router.get("/api/v1/checklist")
 def get_checklist():

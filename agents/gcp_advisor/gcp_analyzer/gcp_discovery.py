@@ -300,6 +300,10 @@ def execute_gcloud_command(project_id: str, command: str) -> str:
     env = os.environ.copy()
     if creds_path and os.path.exists(creds_path):
         env["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
+        # gcloud CLI does NOT natively respect GOOGLE_APPLICATION_CREDENTIALS by default.
+        # It requires this specific override variable to use the Service Account JSON on the fly.
+        env["CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"] = creds_path
+
         
     if "--project" not in command:
         command += f" --project={project_id}"

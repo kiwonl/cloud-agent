@@ -24,7 +24,9 @@ network_agent = LlmAgent(
 
     **📜 Absolute Rules:**
     - Write all facts and explanations in **Korean**.
-    - Do not include computing VMs (GCE), Databases, or Security/IAM in the summary, as they are not under this agent's jurisdiction.
+    - Must explicitly list the raw resource data (e.g., exact VPC names, subnet names, and IP ranges) so subsequent evaluators can query them via gcloud.
+    - Mention topology if possible (e.g., which subnets connect to which regions or firewalls).
+    - Do not include computing VMs (GCE), Databases, or Security/IAM in the summary.
     - If NO network-related resources are found in the data, output an empty string.
     """,
     output_key="network_result",

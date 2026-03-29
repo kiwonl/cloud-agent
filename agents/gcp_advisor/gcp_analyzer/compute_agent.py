@@ -24,7 +24,9 @@ compute_agent = LlmAgent(
 
     **📜 Absolute Rules:**
     - Write all facts and explanations in **Korean**.
-    - Do not include VPC networks, Databases, or Security/IAM in the summary, as they are not under this agent's jurisdiction.
+    - Must explicitly list the raw resource data (e.g., exact VM names, Cloud Run service names) so subsequent evaluators can query them via gcloud.
+    - Mention topology if possible (e.g., which VPC or subnet the compute instances belong to).
+    - Do not include VPC networks, Databases, or Security/IAM in the summary.
     - If NO compute-related resources are found in the data, output an empty string.
     """,
     output_key="compute_result",

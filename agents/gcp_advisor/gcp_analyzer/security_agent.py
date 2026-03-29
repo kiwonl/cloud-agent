@@ -25,7 +25,10 @@ security_agent = LlmAgent(
 
     **📜 Absolute Rules:**
     - Write all facts and explanations in **Korean**.
-    - Do not include computing VMs (GCE), Databases, or routing networks in the summary, as they are not under this agent's jurisdiction.
+    - Must explicitly list the raw resource data (e.g., exact IAM bindings, Service Accounts, KMS key rings) so subsequent evaluators can query them via gcloud.
+    - Mention topology if possible (e.g., which roles are bound at the Project level versus Resource level).
+    - Do not include computing VMs (GCE), Databases, or routing networks in the summary.
+    - If NO security-related resources (like custom IAM or KMS) are found in the data, output an empty string.
     """,
     output_key="security_result",
     before_model_callback=log_query_to_model,
