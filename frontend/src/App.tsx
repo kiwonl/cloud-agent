@@ -1188,7 +1188,7 @@ interface AuditLog {
   data?: string;
 }
 
-const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoading, setIsLoading }: { projectId: string, saKey: string, existingReport: string, onProceed: (report: string) => void, isLoading: boolean, setIsLoading: (val: boolean) => void }) => {
+const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoading, setIsLoading, onError }: { projectId: string, saKey: string, existingReport: string, onProceed: (report: string) => void, isLoading: boolean, setIsLoading: (val: boolean) => void, onError: (msg: string) => void }) => {
   const [logs, setLogs] = useState<{ id: string, message: string, type: string }[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [report, setReport] = useState<string>(existingReport || '');
@@ -1304,6 +1304,7 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
       } catch (err: any) {
         if (isMounted) {
           setLogs(prev => [...prev, { id: 'err', type: 'error', message: `Stream Error: ${err.message}` }]);
+          onError(`스트림 에러가 발생했습니다: ${err.message}`);
           setIsStreaming(false);
           setIsLoading(false);
         }
@@ -1429,6 +1430,7 @@ const AuditLivePage = ({
   setRemediationMap: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   expandedRules: Record<string, boolean>;
   setExpandedRules: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  onError: (msg: string) => void;
 }) => {
   const [activeAgent, setActiveAgent] = useState<string>('initializer');
   const resultsContainerRef = useRef<HTMLDivElement>(null);
@@ -1518,6 +1520,7 @@ const AuditLivePage = ({
       } catch (err: any) {
         if (isMounted) {
           setLogs(prev => [...prev, { id: 'err', agent: 'system', type: 'error', message: `Stream Error: ${err.message}` }]);
+          onError(`평가 스트림 에러가 발생했습니다: ${err.message}`);
           setIsStreaming(false);
         }
       }
@@ -1883,6 +1886,15 @@ export default function App() {
   const [auditRemediationMap, setAuditRemediationMap] = useState<Record<string, string>>({});
   const [auditExpandedRules, setAuditExpandedRules] = useState<Record<string, boolean>>({});
 
+  // Error Modal States
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState<boolean>(false);
+  const [errorModalMessage, setErrorModalMessage] = useState<string>("");
+
+  const showErrorModal = (message: string) => {
+    setErrorModalMessage(message);
+    setIsErrorModalOpen(true);
+  };
+
   const handleStartAudit = (projectId: string, saKey: string, rules: any[]) => {
       setAuditProjectId(projectId);
       setAuditSaKey(saKey);
@@ -2141,7 +2153,7 @@ ${safeMappings}`;
                 }} awaitingApproval={awaitingApproval} isLoading={isLoading} />}
                 {activePage === 'terraform' && <TerraformPage files={terraformFiles} report={terraformReport} />}
                 {activePage === 'audit_setup' && <AuditSetupPage onStartAudit={handleStartAudit} />}
-                {activePage === 'audit_report' && <AuditReportPage projectId={auditProjectId} saKey={auditSaKey} existingReport={infrastructureReport} onProceed={handleAnalysisComplete} isLoading={isLoading} setIsLoading={setIsLoading} />}
+                {activePage === 'audit_report' && <AuditReportPage projectId={auditProjectId} saKey={auditSaKey} existingReport={infrastructureReport} onProceed={handleAnalysisComplete} isLoading={isLoading} setIsLoading={setIsLoading} onError={showErrorModal} />}
                   {activePage === 'audit_live' && (
                     <AuditLivePage
                       projectId={auditProjectId}
@@ -2156,6 +2168,7 @@ ${safeMappings}`;
                       setRemediationMap={setAuditRemediationMap}
                       expandedRules={auditExpandedRules}
                       setExpandedRules={setAuditExpandedRules}
+                      onError={showErrorModal}
                     />
                   )}
               </motion.div>
@@ -2169,6 +2182,57 @@ ${safeMappings}`;
                 </div>
               </div>
             )}
+
+            {/* Error Modal */}
+            <AnimatePresence>
+              {isErrorModalOpen && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[200] p-4"
+                >
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                    className="bg-white rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] w-full max-w-lg overflow-hidden border border-red-100"
+                  >
+                    <div className="bg-gradient-to-r from-red-600 to-rose-600 p-8 text-white relative flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                        <AlertTriangle className="w-7 h-7 text-white" strokeWidth={2} />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-headline font-bold">API 오류 발생</h3>
+                        <p className="text-xs text-white/80 mt-1">리소스 고갈 또는 시스템 오류가 발생했습니다.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="p-8">
+                      <div className="p-4 bg-red-50 rounded-xl border border-red-100 mb-6">
+                        <p className="text-sm font-medium text-red-800 break-words leading-relaxed">
+                          {errorModalMessage}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-3">
+                        <p className="text-xs text-on-surface-variant leading-relaxed">
+                          Gemini API 할당량이 초과되었거나 일시적인 네트워크 장애일 수 있습니다. 잠시 후 다시 시도해 주세요.
+                        </p>
+                        
+                        <button
+                          onClick={() => setIsErrorModalOpen(false)}
+                          className="mt-4 w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm tracking-wide shadow-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                        >
+                          확인 및 닫기
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             </div>
           </div>

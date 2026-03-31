@@ -6,20 +6,28 @@ cd "$SCRIPT_DIR/.."
 
 # Load .env variables implicitly inside Python or Node (do not use xargs due to multiline JSON strings)
 
-# node_env가 있을 경우 PATH 업데이트
-if [ -d "node_env/bin" ]; then
-    export PATH="$PWD/node_env/bin:$PATH"
-fi
+
 
 # 1. Automatic installation of ADK toolchain
-if [ ! -d "venv" ]; then
+if [ ! -f ".venv/bin/pip" ]; then
     echo "======================================"
-    echo "Initializing Virtual Environment..."
+    echo "Initializing/Fixing Virtual Environment..."
     echo "======================================"
-    python3 -m venv venv
-    ./venv/bin/pip install --upgrade pip
-    ./venv/bin/pip install --index-url https://pypi.org/simple/ -r agents/requirements.txt
+    if [ ! -d ".venv" ]; then
+        python3 -m venv .venv
+    fi
+    
+    # If pip is missing inside the venv (e.g. missing ensurepip on system)
+    if [ ! -f ".venv/bin/pip" ]; then
+        echo "Installing pip via get-pip.py..."
+        curl -sSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        ./.venv/bin/python3 get-pip.py --index-url https://pypi.org/simple/
+        rm get-pip.py
+    fi
 fi
+
+./.venv/bin/pip install --upgrade pip
+./.venv/bin/pip install --extra-index-url https://pypi.org/simple/ -r agents/requirements.txt
 
 # Kill existing servers to prevent Address already in use error
 lsof -ti:8000,8080 | xargs kill -9 2>/dev/null
@@ -28,7 +36,7 @@ echo "======================================"
 echo "Starting FastAPI Backend (Port 8000)..."
 echo "======================================"
 # Start custom Unified FastAPI Orchestrator Backend in background (serving ALL agents)
-./venv/bin/uvicorn agents.server:adk_app --port 8000 --host 0.0.0.0 &
+./.venv/bin/uvicorn agents.server:adk_app --port 8000 --host 0.0.0.0 &
 BACKEND_PID=$!
 
 echo "======================================"
@@ -44,7 +52,7 @@ if [ -d "frontend" ]; then
         echo "🚀 Starting Vite Dev Server..."
         npm run dev -- --port 8080 &
     else
-        echo "⚠️  npm not found in PATH. Falling back to Static HTTP Server..."
+        echo "⚠️  npm not found in PATH."
         if [ -d "dist" ]; then
             echo "Serving compiled production build from dist/..."
             cd dist
@@ -52,8 +60,8 @@ if [ -d "frontend" ]; then
             FRONTEND_PID=$!
             cd ..
         else
-            python3 -m http.server 8080 &
-            FRONTEND_PID=$!
+            echo "❌ Error: 'dist' directory not found. Please build the frontend first."
+            FRONTEND_PID=""
         fi
     fi
     cd ..
