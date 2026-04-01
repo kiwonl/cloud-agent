@@ -1291,6 +1291,11 @@ const AuditReportPage = ({ projectId, saKey, existingReport, onProceed, isLoadin
                         setReport(fullReport);
                         setLogs(prev => [...prev, { id: logId, type: 'status', message: 'Report generated successfully.' }]);
                       }
+                    } else if (payload.type === 'error') {
+                      setIsStreaming(false);
+                      setIsLoading(false);
+                      onError(`보고서 생성 에러 발생: ${payload.message}`);
+                      break; // 스트림 대기 상태 탈출
                     } else if (payload.message) {
                       setLogs(prev => [...prev, { id: logId, type: payload.type, message: payload.message }]);
                     }
@@ -1416,7 +1421,8 @@ const AuditLivePage = ({
   remediationMap,
   setRemediationMap,
   expandedRules,
-  setExpandedRules
+  setExpandedRules,
+  onError
 }: {
   projectId: string;
   saKey: string;
@@ -1507,6 +1513,10 @@ const AuditLivePage = ({
 
                     if (newLog.type === 'remediation_plan' && newLog.data && newLog.rule_id) {
                       setRemediationMap(prev => ({ ...prev, [newLog.rule_id!]: newLog.data! }));
+                    } else if (newLog.type === 'error') {
+                      onError(`평가 실패 에러: ${newLog.message}`);
+                      setIsStreaming(false);
+                      break; // 스트림 대기 상태 탈출
                     }
                     
                     setLogs(prev => [...prev, newLog]);
@@ -2197,23 +2207,24 @@ ${safeMappings}`;
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
                     transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                    className="bg-white rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] w-full max-w-lg overflow-hidden border border-red-100"
+                    className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 flex flex-col"
                   >
-                    <div className="bg-gradient-to-r from-red-600 to-rose-600 p-8 text-white relative flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
-                        <AlertTriangle className="w-7 h-7 text-white" strokeWidth={2} />
+                    <div className="p-8 flex items-center gap-4 border-b border-gray-100 bg-white">
+                      <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center shrink-0 border border-red-100">
+                        <AlertTriangle className="w-6 h-6 text-red-600" strokeWidth={2} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-headline font-bold">API 오류 발생</h3>
-                        <p className="text-xs text-white/80 mt-1">리소스 고갈 또는 시스템 오류가 발생했습니다.</p>
+                        <h3 className="text-lg font-headline font-bold text-slate-900">API 오류 발생</h3>
+                        <p className="text-xs text-on-surface-variant mt-1">시스템에서 문제가 발견되었습니다.</p>
                       </div>
                     </div>
                     
                     <div className="p-8">
-                      <div className="p-4 bg-red-50 rounded-xl border border-red-100 mb-6">
-                        <p className="text-sm font-medium text-red-800 break-words leading-relaxed">
+                      <div className="p-4 bg-slate-50 rounded-xl border border-gray-100 mb-6 flex items-center gap-3">
+                         <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 animate-pulse"></div>
+                         <p className="text-sm font-medium text-slate-700 break-words leading-relaxed flex-1">
                           {errorModalMessage}
-                        </p>
+                         </p>
                       </div>
                       
                       <div className="flex flex-col gap-3">
